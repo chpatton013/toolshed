@@ -20,7 +20,7 @@ _LOCK = Lock(
     }
 )
 
-_UV_MANIFEST = """
+_UV_MANIFEST = r"""
 [tool.uv]
 method = "dotslash"
 version = "0.11.7"
@@ -68,15 +68,13 @@ class DotslashRendering(unittest.TestCase):
         self.assertEqual(
             "uv-aarch64-apple-darwin/uv", body["platforms"]["macos-aarch64"]["path"]
         )
-        self.assertEqual(
-            "tar.gz", body["platforms"]["macos-aarch64"]["format"]
-        )
+        self.assertEqual("tar.gz", body["platforms"]["macos-aarch64"]["format"])
 
     def test_a_raw_binary_omits_the_format_key(self):
         import json
 
         manifest = _UV_MANIFEST.replace('format = "tar.gz"\n', "").replace(
-            'archive_path = "uv-{triple}/uv"\n', ""
+            r'archive_path = "uv-{triple}/uv"' + "\n", ""
         )
         out = _render(manifest, "uv", _LOCK)
         body = json.loads(out.split("\n", 1)[1])
@@ -125,7 +123,9 @@ class UvRunRendering(unittest.TestCase):
 
         self.assertIn('if [ -n "${TOOLSHED_SOURCE:-}" ]', out)
         self.assertIn('--with "$TOOLSHED_SOURCE"', out)
-        self.assertIn('--with "toolshed @ git+https://example.invalid/toolshed@main"', out)
+        self.assertIn(
+            '--with "toolshed @ git+https://example.invalid/toolshed@main"', out
+        )
 
     def test_the_runner_prefers_a_designated_bin_dir_over_path(self):
         out = _render(self._MANIFEST, "validate")
@@ -153,9 +153,7 @@ class UvRunArgsRendering(unittest.TestCase):
             "test",
         )
 
-        self.assertIn(
-            'python -m unittest "discover" "-s" "tests" "-t" "." "$@"', out
-        )
+        self.assertIn('python -m unittest "discover" "-s" "tests" "-t" "." "$@"', out)
 
 
 class BunRunRendering(unittest.TestCase):
@@ -186,14 +184,11 @@ class BunRunRendering(unittest.TestCase):
 
 class WriteBin(unittest.TestCase):
     def _manifest(self):
-        return parse_manifest(
-            _UV_MANIFEST
-            + """
+        return parse_manifest(_UV_MANIFEST + """
             [tool.validate]
             method = "uv-run"
             module = "toolshed.validator"
-            """
-        )
+            """)
 
     def test_rendered_files_are_executable(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -325,7 +320,10 @@ class RenderedWrapperExecutes(unittest.TestCase):
             fake_uv = path_dir / "uv"
             fake_uv.write_text('#!/bin/bash\necho "ARGS: $*"\n')
             fake_uv.chmod(0o755)
+            # The suite itself runs with TOOLSHED_SOURCE set, so the "unset"
+            # case has to clear it explicitly rather than inherit it.
             base_env = {**os.environ, "PATH": str(path_dir)}
+            base_env.pop("TOOLSHED_SOURCE", None)
 
             pinned = subprocess.run(
                 [str(bin_dir / "shout")],

@@ -5,7 +5,7 @@ One `[tool.<name>]` table per executable; `method` selects the template that
 renders it and which other keys that table may carry.
 
 `[requirements.<group>]` tables name reusable dependency sets so related tools
-can share specs without a requirements file — nothing a rendered executable
+can share specs without a requirements file - nothing a rendered executable
 needs may live in a sibling file, since rendered executables are relocatable.
 """
 
@@ -39,9 +39,7 @@ class ManifestError(Exception):
 
 def _substitute(template: str, values: dict[str, str], what: str) -> str:
     names = {
-        name
-        for _, name, _, _ in string.Formatter().parse(template)
-        if name is not None
+        name for _, name, _, _ in string.Formatter().parse(template) if name is not None
     }
     missing = sorted(names - values.keys())
     if missing:
@@ -132,9 +130,7 @@ class RunnerTool(Tool):
         for group_name in group_names:
             if group_name in active:
                 cycle = " -> ".join([*trail, group_name])
-                raise ManifestError(
-                    f"tool '{self.name}': requirements cycle: {cycle}"
-                )
+                raise ManifestError(f"tool '{self.name}': requirements cycle: {cycle}")
             active.add(group_name)
             self._detect_cycle(
                 manifest,
@@ -231,9 +227,7 @@ def _reject_unknown_keys(table: dict, allowed: frozenset[str], what: str) -> Non
 
 def _require_sorted(names: list[str], what: str) -> None:
     if names != sorted(names):
-        raise ManifestError(
-            f"{what} must be sorted by name; found {', '.join(names)}"
-        )
+        raise ManifestError(f"{what} must be sorted by name; found {', '.join(names)}")
 
 
 def _parse_group(name: str, table: dict) -> RequirementsGroup:
@@ -329,9 +323,7 @@ def _parse_tool(name: str, table: dict) -> Tool:
 
 def parse_manifest(text: str) -> Manifest:
     data = tomllib.loads(text)
-    _reject_unknown_keys(
-        data, frozenset({"tool", "requirements"}), "manifest"
-    )
+    _reject_unknown_keys(data, frozenset({"tool", "requirements"}), "manifest")
 
     group_tables = data.get("requirements", {})
     _require_sorted(list(group_tables), "requirements groups")

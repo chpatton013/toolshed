@@ -18,7 +18,7 @@ _NETWORK = os.environ.get("TOOLSHED_TEST_NETWORK") == "1"
 # tool name -> (manifest text, platform, expected size, expected blake3 digest)
 _KNOWN_GOOD = {
     "shfmt": (
-        """
+        r"""
         [tool.shfmt]
         method = "dotslash"
         version = "3.13.1"
@@ -34,7 +34,7 @@ _KNOWN_GOOD = {
         "b205ddbbbae9aeed80f89f12b9d4c200a47bcafe8d9c3e56e8ef1f8a2a1af31e",
     ),
     "uv": (
-        """
+        r"""
         [tool.uv]
         method = "dotslash"
         version = "0.11.7"

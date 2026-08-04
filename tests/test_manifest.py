@@ -2,7 +2,7 @@ import unittest
 
 from toolshed.manifest import ManifestError, parse_manifest
 
-_UV_TOOL = """
+_UV_TOOL = r"""
 [tool.uv]
 method = "dotslash"
 version = "0.11.7"
@@ -185,7 +185,7 @@ class DotslashTools(unittest.TestCase):
         self.assertEqual("uv-aarch64-apple-darwin/uv", tool.path_for("macos-aarch64"))
 
     def test_a_raw_binary_tool_needs_no_format_and_paths_to_its_own_name(self):
-        manifest = parse_manifest("""
+        manifest = parse_manifest(r"""
         [tool.jq]
         method = "dotslash"
         version = "1.8.1"
@@ -203,7 +203,7 @@ class DotslashTools(unittest.TestCase):
 
     def test_a_dotslash_tool_must_cover_every_target_platform(self):
         with self.assertRaisesRegex(ManifestError, "linux-x86_64"):
-            parse_manifest("""
+            parse_manifest(r"""
             [tool.uv]
             method = "dotslash"
             version = "0.11.7"
@@ -216,7 +216,7 @@ class DotslashTools(unittest.TestCase):
 
     def test_an_unknown_platform_key_is_rejected(self):
         with self.assertRaisesRegex(ManifestError, "freebsd-x86_64"):
-            parse_manifest("""
+            parse_manifest(r"""
             [tool.uv]
             method = "dotslash"
             version = "0.11.7"
@@ -230,7 +230,7 @@ class DotslashTools(unittest.TestCase):
             """)
 
     def test_an_unsubstituted_placeholder_is_reported_rather_than_emitted(self):
-        manifest = parse_manifest("""
+        manifest = parse_manifest(r"""
         [tool.uv]
         method = "dotslash"
         version = "0.11.7"

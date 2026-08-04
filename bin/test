@@ -14,6 +14,7 @@ fi
 # --no-project: dependencies come from this file, so an unrelated pyproject.toml
 # in the working directory must not influence the environment.
 uv_args=(run --no-project)
+uv_args+=(--with "blake3>=1.0")
 uv_args+=(--with "black")
 uv_args+=(--with "pyupgrade")
 uv_args+=(--with "yamllint")

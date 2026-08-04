@@ -1,0 +1,121 @@
+# Which validators run over which files. A validator with no table here never
+# runs; `include_files` selects, `exclude_files` removes from that selection.
+# Globs are gitignore-style, relative to this file.
+
+# Repo-specific validators, merged with the engine's builtins at run time.
+[validators]
+paths = ["validators"]
+
+[validator.manifest-pinned]
+include_files = ["tools.lock.toml", "tools.toml"]
+
+# Every input to a render, so editing any of them re-checks the generated output
+# -- including under `--dirty`, where only staged files are considered.
+[validator.manifest-sync]
+include_files = ["bin/*", "tools.lock.toml", "tools.toml"]
+
+[validator.dotslash]
+include_files = ["bin/*"]
+
+[validator.biome]
+include_files = [
+  "**/*.css",
+  "**/*.htm",
+  "**/*.html",
+  "**/*.js",
+  "**/*.json",
+  "**/*.jsonc",
+  "**/*.jsx",
+  "**/*.ts",
+  "**/*.tsx",
+]
+# bin/* dotslash manifests are JSON with a shebang; the `dotslash` validator
+# formats their body instead, since biome cannot parse the shebang.
+exclude_files = ["bin/*"]
+
+[validator.gitleaks]
+include_files = ["**"]
+
+[validator.python-black]
+include_files = ["**/*.py"]
+
+[validator.python-filename]
+include_files = ["**/*.py"]
+
+[validator.python-fstring]
+include_files = ["**/*.py"]
+
+[validator.python-shadow-import]
+include_files = ["**/*.py"]
+
+[validator.pyupgrade]
+include_files = ["**/*.py"]
+
+# The rendered runner wrappers carry no extension, so they are listed by name.
+# Keep in step with the uv-run and bun-run tools in tools.toml.
+[validator.shellcheck]
+include_files = [
+  "**/*.bash",
+  "**/*.sh",
+  "bin/pre-commit",
+  "bin/render",
+  "bin/test",
+  "bin/validate",
+]
+
+[validator.shfmt]
+include_files = [
+  "**/*.bash",
+  "**/*.sh",
+  "bin/pre-commit",
+  "bin/render",
+  "bin/test",
+  "bin/validate",
+]
+
+[validator.taplo]
+include_files = ["**/*.toml"]
+
+[validator.yamlfmt]
+include_files = ["**/*.yaml", "**/*.yml"]
+
+[validator.yamllint]
+include_files = ["**/*.yaml", "**/*.yml"]
+
+[validator.case-conflict]
+include_files = ["**"]
+
+[validator.conflict-markers]
+include_files = ["**"]
+
+[validator.executable-extension]
+include_files = ["**"]
+# Consumers fetch and run this by its conventional name, so it keeps both the
+# .sh suffix and the executable bit.
+exclude_files = ["install.sh"]
+
+[validator.file-size]
+include_files = ["**"]
+
+[validator.filename-chars]
+include_files = ["**"]
+
+[validator.keep-sorted]
+include_files = ["**"]
+
+[validator.symlink]
+include_files = ["**"]
+
+[validator.tabs]
+include_files = ["**"]
+
+[validator.trailing-newline]
+include_files = ["**"]
+
+[validator.trailing-whitespace]
+include_files = ["**"]
+exclude_files = ["**/*.md"]
+
+[validator.unicode]
+include_files = ["**"]
+exclude_files = ["**/*.md"]

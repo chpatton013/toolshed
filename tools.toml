@@ -11,11 +11,7 @@
 # its `validators` extra too, but naming them here keeps the rendered wrapper
 # readable and lets the override below swap the package without losing them.
 [requirements.python-validators]
-packages = [
-  "black",
-  "pyupgrade",
-  "yamllint",
-]
+packages = ["black", "pyupgrade", "yamllint"]
 
 # toolshed's own code. Overridable so a checkout can exercise its working tree:
 # `TOOLSHED_SOURCE=. ./validate`. Released wrappers with the variable unset
@@ -133,6 +129,8 @@ method = "uv-run"
 module = "unittest"
 # Paths resolve against the working directory, so run this from the repo root.
 args = ["discover", "-s", "tests", "-t", "."]
+# The suite covers pinning, which needs the hash implementation.
+requirement = ["blake3>=1.0"]
 requirements = ["python-validators", "toolshed"]
 
 [tool.uv]

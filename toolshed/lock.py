@@ -45,7 +45,11 @@ class Lock:
     def restricted_to(self, tool_names: set[str]) -> "Lock":
         """Drop pins for tools the manifest no longer declares."""
         return Lock(
-            {name: entries for name, entries in self._pins.items() if name in tool_names}
+            {
+                name: entries
+                for name, entries in self._pins.items()
+                if name in tool_names
+            }
         )
 
     def dumps(self) -> str:

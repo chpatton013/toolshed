@@ -30,8 +30,10 @@ class RoundTrip(unittest.TestCase):
     def test_a_dumped_lock_parses_back_to_the_same_pins(self):
         original = Lock(
             {
-                "uv": {p: PlatformPin(size=i, digest=f"{i:064x}")
-                       for i, p in enumerate(PLATFORMS)},
+                "uv": {
+                    p: PlatformPin(size=i, digest=f"{i:064x}")
+                    for i, p in enumerate(PLATFORMS)
+                },
                 "jq": {p: PlatformPin(size=9, digest="f" * 64) for p in PLATFORMS},
             }
         )
@@ -54,8 +56,12 @@ class RoundTrip(unittest.TestCase):
         )
         backward = Lock(
             {
-                "zzz": {p: PlatformPin(size=2, digest="z") for p in reversed(PLATFORMS)},
-                "aaa": {p: PlatformPin(size=1, digest="a") for p in reversed(PLATFORMS)},
+                "zzz": {
+                    p: PlatformPin(size=2, digest="z") for p in reversed(PLATFORMS)
+                },
+                "aaa": {
+                    p: PlatformPin(size=1, digest="a") for p in reversed(PLATFORMS)
+                },
             }
         )
 
