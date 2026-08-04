@@ -1,0 +1,167 @@
+# The manifest: every executable toolshed ships, and how to bootstrap it.
+#
+# Hand-edited. Digests live in the generated tools.lock.toml, so bumping a tool
+# is a one-line `version` change followed by `render pin <tool> && render`.
+#
+# Tables must stay sorted by name; the `keep-sorted` validator enforces it.
+
+# ---- reusable dependency sets ----------------------------------------------
+
+# The Python engines behind the builtin validators. toolshed declares these as
+# its `validators` extra too, but naming them here keeps the rendered wrapper
+# readable and lets the override below swap the package without losing them.
+[requirements.python-validators]
+packages = [
+  "black",
+  "pyupgrade",
+  "yamllint",
+]
+
+# toolshed's own code. Overridable so a checkout can exercise its working tree:
+# `TOOLSHED_SOURCE=. ./validate`. Released wrappers with the variable unset
+# resolve the pinned spec instead.
+[requirements.toolshed]
+packages = ["toolshed @ git+https://github.com/chpatton013/toolshed@main"]
+override_env = "TOOLSHED_SOURCE"
+
+# ---- tools, sorted by name -------------------------------------------------
+#
+# `method` selects the template and decides which other keys the table may
+# carry: dotslash for prebuilt binaries, uv-run for Python, bun-run for JS,
+# passthrough for a hand-written bin/ file.
+
+[tool.biome]
+method = "dotslash"
+version = "2.4.12"
+# The release tag is URL-encoded: @biomejs/biome@<version>.
+url = "https://github.com/biomejs/biome/releases/download/%40biomejs/biome%40{version}/biome-{asset}"
+
+[tool.biome.platforms]
+linux-aarch64 = { asset = "linux-arm64-musl" }
+linux-x86_64 = { asset = "linux-x64-musl" }
+macos-aarch64 = { asset = "darwin-arm64" }
+macos-x86_64 = { asset = "darwin-x64" }
+
+[tool.bun]
+method = "dotslash"
+version = "1.3.12"
+url = "https://github.com/oven-sh/bun/releases/download/bun-v{version}/bun-{asset}.zip"
+format = "zip"
+archive_path = "bun-{asset}/bun"
+
+[tool.bun.platforms]
+linux-aarch64 = { asset = "linux-aarch64" }
+linux-x86_64 = { asset = "linux-x64" }
+macos-aarch64 = { asset = "darwin-aarch64" }
+macos-x86_64 = { asset = "darwin-x64" }
+
+[tool.gitleaks]
+method = "dotslash"
+version = "8.30.1"
+url = "https://github.com/gitleaks/gitleaks/releases/download/v{version}/gitleaks_{version}_{asset}.tar.gz"
+format = "tar.gz"
+archive_path = "gitleaks"
+
+[tool.gitleaks.platforms]
+linux-aarch64 = { asset = "linux_arm64" }
+linux-x86_64 = { asset = "linux_x64" }
+macos-aarch64 = { asset = "darwin_arm64" }
+macos-x86_64 = { asset = "darwin_x64" }
+
+[tool.jq]
+method = "dotslash"
+version = "1.8.1"
+url = "https://github.com/jqlang/jq/releases/download/jq-{version}/jq-{asset}"
+
+[tool.jq.platforms]
+linux-aarch64 = { asset = "linux-arm64" }
+linux-x86_64 = { asset = "linux-amd64" }
+macos-aarch64 = { asset = "macos-arm64" }
+macos-x86_64 = { asset = "macos-amd64" }
+
+[tool.pre-commit]
+method = "uv-run"
+module = "toolshed.validator.precommit"
+requirements = ["python-validators", "toolshed"]
+
+[tool.render]
+method = "uv-run"
+module = "toolshed.render"
+# `render pin` hashes downloaded assets; the rest of render does not need it.
+requirement = ["blake3>=1.0"]
+requirements = ["toolshed"]
+
+[tool.shellcheck]
+method = "dotslash"
+version = "0.11.0"
+url = "https://github.com/koalaman/shellcheck/releases/download/v{version}/shellcheck-v{version}.{asset}.tar.gz"
+format = "tar.gz"
+archive_path = "shellcheck-v{version}/shellcheck"
+
+[tool.shellcheck.platforms]
+linux-aarch64 = { asset = "linux.aarch64" }
+linux-x86_64 = { asset = "linux.x86_64" }
+macos-aarch64 = { asset = "darwin.aarch64" }
+macos-x86_64 = { asset = "darwin.x86_64" }
+
+[tool.shfmt]
+method = "dotslash"
+version = "3.13.1"
+url = "https://github.com/mvdan/sh/releases/download/v{version}/shfmt_v{version}_{asset}"
+
+[tool.shfmt.platforms]
+linux-aarch64 = { asset = "linux_arm64" }
+linux-x86_64 = { asset = "linux_amd64" }
+macos-aarch64 = { asset = "darwin_arm64" }
+macos-x86_64 = { asset = "darwin_amd64" }
+
+[tool.taplo]
+method = "dotslash"
+version = "0.10.0"
+url = "https://github.com/tamasfe/taplo/releases/download/{version}/taplo-{asset}.gz"
+format = "gz"
+archive_path = "taplo"
+
+[tool.taplo.platforms]
+linux-aarch64 = { asset = "linux-aarch64" }
+linux-x86_64 = { asset = "linux-x86_64" }
+macos-aarch64 = { asset = "darwin-aarch64" }
+macos-x86_64 = { asset = "darwin-x86_64" }
+
+[tool.test]
+method = "uv-run"
+module = "unittest"
+# Paths resolve against the working directory, so run this from the repo root.
+args = ["discover", "-s", "tests", "-t", "."]
+requirements = ["python-validators", "toolshed"]
+
+[tool.uv]
+method = "dotslash"
+version = "0.11.7"
+url = "https://github.com/astral-sh/uv/releases/download/{version}/uv-{triple}.tar.gz"
+format = "tar.gz"
+archive_path = "uv-{triple}/uv"
+
+[tool.uv.platforms]
+linux-aarch64 = { triple = "aarch64-unknown-linux-musl" }
+linux-x86_64 = { triple = "x86_64-unknown-linux-musl" }
+macos-aarch64 = { triple = "aarch64-apple-darwin" }
+macos-x86_64 = { triple = "x86_64-apple-darwin" }
+
+[tool.validate]
+method = "uv-run"
+module = "toolshed.validator"
+requirements = ["python-validators", "toolshed"]
+
+[tool.yamlfmt]
+method = "dotslash"
+version = "0.21.0"
+url = "https://github.com/google/yamlfmt/releases/download/v{version}/yamlfmt_{version}_{asset}.tar.gz"
+format = "tar.gz"
+archive_path = "yamlfmt"
+
+[tool.yamlfmt.platforms]
+linux-aarch64 = { asset = "Linux_arm64" }
+linux-x86_64 = { asset = "Linux_x86_64" }
+macos-aarch64 = { asset = "Darwin_arm64" }
+macos-x86_64 = { asset = "Darwin_x86_64" }

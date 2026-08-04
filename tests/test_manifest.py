@@ -246,6 +246,27 @@ class DotslashTools(unittest.TestCase):
             manifest.tools["uv"].url_for("macos-aarch64")
 
 
+class UvRunArgs(unittest.TestCase):
+    def test_fixed_args_precede_the_caller_s_own(self):
+        manifest = parse_manifest("""
+        [tool.test]
+        method = "uv-run"
+        module = "unittest"
+        args = ["discover", "-s", "tests"]
+        """)
+
+        self.assertEqual(("discover", "-s", "tests"), manifest.tools["test"].args)
+
+    def test_args_default_to_none(self):
+        manifest = parse_manifest("""
+        [tool.check]
+        method = "uv-run"
+        module = "check"
+        """)
+
+        self.assertEqual((), manifest.tools["check"].args)
+
+
 class BunTools(unittest.TestCase):
     def test_a_bun_tool_runs_either_an_entry_or_a_package_but_not_both(self):
         with self.assertRaisesRegex(ManifestError, "entry.*package|package.*entry"):

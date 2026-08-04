@@ -141,6 +141,23 @@ class UvRunRendering(unittest.TestCase):
         self.assertIn('"$@"', out)
 
 
+class UvRunArgsRendering(unittest.TestCase):
+    def test_fixed_args_are_emitted_before_the_caller_s_arguments(self):
+        out = _render(
+            """
+            [tool.test]
+            method = "uv-run"
+            module = "unittest"
+            args = ["discover", "-s", "tests", "-t", "."]
+            """,
+            "test",
+        )
+
+        self.assertIn(
+            'python -m unittest "discover" "-s" "tests" "-t" "." "$@"', out
+        )
+
+
 class BunRunRendering(unittest.TestCase):
     def test_an_entry_tool_runs_the_entry(self):
         out = _render(

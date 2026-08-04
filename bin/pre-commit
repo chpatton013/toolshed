@@ -14,14 +14,16 @@ fi
 # --no-project: dependencies come from this file, so an unrelated pyproject.toml
 # in the working directory must not influence the environment.
 uv_args=(run --no-project)
-<% for spec in requirements %>uv_args+=(--with "<< spec >>")
-<% endfor %><% for env, specs in overridable %>
-# Set << env >> to resolve these specs from somewhere
+uv_args+=(--with "black")
+uv_args+=(--with "pyupgrade")
+uv_args+=(--with "yamllint")
+
+# Set TOOLSHED_SOURCE to resolve these specs from somewhere
 # else -- a local checkout, a different tag -- without re-rendering this file.
-if [ -n "${<< env >>:-}" ]; then
-  uv_args+=(--with "$<< env >>")
+if [ -n "${TOOLSHED_SOURCE:-}" ]; then
+  uv_args+=(--with "$TOOLSHED_SOURCE")
 else
-<% for spec in specs %>  uv_args+=(--with "<< spec >>")
-<% endfor %>fi
-<% endfor %>
-exec "$uv" "${uv_args[@]}" python -m << tool.module >><% for arg in tool.args %> "<< arg >>"<% endfor %> "$@"
+  uv_args+=(--with "toolshed @ git+https://github.com/chpatton013/toolshed@main")
+fi
+
+exec "$uv" "${uv_args[@]}" python -m toolshed.validator.precommit "$@"

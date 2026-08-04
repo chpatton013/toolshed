@@ -24,7 +24,7 @@ _RUNNER_TOOL_KEYS = _BASE_TOOL_KEYS | {"requirement", "requirements"}
 _METHOD_KEYS = {
     "dotslash": _BASE_TOOL_KEYS
     | {"version", "url", "format", "archive_path", "platforms"},
-    "uv-run": _RUNNER_TOOL_KEYS | {"module"},
+    "uv-run": _RUNNER_TOOL_KEYS | {"module", "args"},
     # bun resolves its own dependencies -- from the entry's package.json, or from
     # the `bun x` package spec -- so it takes no requirements of ours.
     "bun-run": _BASE_TOOL_KEYS | {"entry", "package"},
@@ -166,6 +166,10 @@ class RunnerTool(Tool):
 @dataclass(frozen=True)
 class UvRunTool(RunnerTool):
     module: str = ""
+    # Fixed arguments the module always needs, ahead of the caller's own. Any
+    # path here resolves against the working directory, so a tool that uses one
+    # is inherently repo-local rather than relocatable.
+    args: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -312,6 +316,7 @@ def _parse_tool(name: str, table: dict) -> Tool:
             requirement=tuple(table.get("requirement", ())),
             requirements=tuple(table.get("requirements", ())),
             module=table["module"],
+            args=tuple(table.get("args", ())),
         )
 
     entry, package = table.get("entry"), table.get("package")
