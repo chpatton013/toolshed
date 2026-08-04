@@ -1,0 +1,57 @@
+name: release
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to release
+        required: true
+env:
+  TOOLSHED_SOURCE: .
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Install dotslash
+        run: |
+          bash scripts/bootstrap/dotslash.sh
+          echo "${XDG_BIN_HOME:-$HOME/.local/bin}" >>"$GITHUB_PATH"
+      # Refuse to publish a bin/ that does not match the manifest, or one with an
+      # unpinned tool. `validate` covers the second via manifest-pinned.
+      - name: Check bin/ matches tools.toml
+        run: ./render --check
+      - name: Validate
+        run: ./validate
+      - name: Test
+        run: ./bin/test
+      # Three assets rather than one tarball of the whole repo. Rendered
+      # executables carry no path arithmetic, so bin/ stands alone; the renderer
+      # and validators are separate concerns that separate consumers want.
+      - name: Build release assets
+        run: |
+          mkdir -p dist
+          tar czf dist/toolshed-bin.tar.gz bin
+          tar czf dist/toolshed-validators.tar.gz validators
+          uv build --wheel --out-dir dist
+          # Listed by name, not by glob: the glob would have to exclude the sums
+          # file it is creating, and install.sh looks entries up by bare name.
+          cd dist
+          sha256sum toolshed-bin.tar.gz toolshed-validators.tar.gz ./*.whl \
+            | sed 's| \./| |' >SHA256SUMS
+          cat SHA256SUMS
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$TAG" \
+            --generate-notes \
+            dist/*

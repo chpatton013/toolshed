@@ -1,0 +1,48 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+env:
+  # Exercise the tree under review rather than the pinned upstream spec that the
+  # rendered wrappers resolve by default.
+  TOOLSHED_SOURCE: .
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      # The pinned manifests in bin/ are not executable without it, and it
+      # cannot itself be a dotslash file.
+      - name: Install dotslash
+        run: |
+          bash scripts/bootstrap/dotslash.sh
+          echo "${XDG_BIN_HOME:-$HOME/.local/bin}" >>"$GITHUB_PATH"
+      - name: Check bin/ matches tools.toml
+        run: ./render --check
+      - name: Validate
+        run: ./validate
+      - name: Test
+        run: ./bin/test
+  # A pinned digest is only meaningful if upstream still serves those bytes. A
+  # re-tagged or replaced asset is a supply-chain signal worth surfacing, but it
+  # is upstream's doing rather than a fault in the commit, so it does not gate.
+  verify-pins:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Re-download assets and compare digests
+        run: |
+          cp tools.lock.toml /tmp/committed.lock.toml
+          ./render pin
+          diff -u /tmp/committed.lock.toml tools.lock.toml
