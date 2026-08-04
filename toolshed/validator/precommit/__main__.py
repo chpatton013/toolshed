@@ -35,13 +35,34 @@ def main() -> int:
         action="store_true",
         help="With --install, overwrite an existing pre-commit hook.",
     )
+    parser.add_argument(
+        "--env",
+        action="append",
+        default=[],
+        metavar="VAR=VALUE",
+        help=(
+            "With --install, have the hook default VAR to VALUE. Repeatable. "
+            "A value already exported by the caller still wins."
+        ),
+    )
     args = parser.parse_args()
 
     repo_root = _find_repo_root()
     if args.install:
-        return install_hook(repo_root, force=args.force)
+        env = {}
+        for assignment in args.env:
+            name, separator, value = assignment.partition("=")
+            if not separator or not name:
+                parser.error(f"--env expects VAR=VALUE, got {assignment!r}")
+            env[name] = value
+        try:
+            return install_hook(repo_root, force=args.force, env=env or None)
+        except ValueError as e:
+            parser.error(str(e))
     if args.force:
         parser.error("--force requires --install")
+    if args.env:
+        parser.error("--env requires --install")
     return run_hook(repo_root)
 
 
