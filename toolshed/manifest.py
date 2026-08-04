@@ -111,8 +111,7 @@ class RunnerTool(Tool):
     def _resolve(
         self, manifest: "Manifest"
     ) -> tuple[list[str], list[tuple[str, tuple[str, ...]]]]:
-        path: set[str] = set()
-        self._detect_cycle(manifest, self.requirements, path, ())
+        self._detect_cycle(manifest, self.requirements, set(), ())
         specs, overridable = self._walk(manifest, self.requirements, set())
         ordered: list[str] = []
         for spec in [*self.requirement, *specs]:

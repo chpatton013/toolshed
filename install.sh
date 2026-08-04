@@ -115,4 +115,10 @@ if [ "$install_dotslash" -eq 1 ]; then
   bash "$tmp/dotslash.sh"
 fi
 
-echo "$target/bin"
+# The bin directory is what a caller adds to PATH. An asset without one (the
+# validators archive, say) has nothing to add, so report where it landed instead.
+if [ -d "$target/bin" ]; then
+  echo "$target/bin"
+else
+  echo "$target"
+fi

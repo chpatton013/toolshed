@@ -344,5 +344,14 @@ class RenderedWrapperExecutes(unittest.TestCase):
             self.assertNotIn("git+https", overridden.stdout)
 
 
+class Cli(unittest.TestCase):
+    def test_check_combined_with_pin_is_rejected(self):
+        """Otherwise `render --check pin` would silently pin and report nothing."""
+        from toolshed.render import main
+
+        with self.assertRaises(SystemExit):
+            main(["--check", "pin"])
+
+
 if __name__ == "__main__":
     unittest.main()

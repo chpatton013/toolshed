@@ -25,7 +25,6 @@ from toolshed.manifest import (
     DotslashTool,
     Manifest,
     ManifestError,
-    RunnerTool,
     Tool,
     UvRunTool,
     load_manifest,
@@ -132,8 +131,7 @@ def write_bin(manifest: Manifest, lock: Lock, bin_dir: pathlib.Path) -> list[str
     changed = []
     for name, text in texts.items():
         path = bin_dir / name
-        existed = path.exists()
-        if not existed or path.read_text() != text:
+        if not path.exists() or path.read_text() != text:
             path.write_text(text)
             changed.append(name)
         path.chmod(_MODE)
@@ -224,6 +222,8 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     if args.command == "pin":
+        if args.check:
+            parser.error("--check cannot be combined with pin")
         from toolshed.pin import pin_tools
 
         try:

@@ -10,7 +10,7 @@ import sys
 import urllib.error
 import urllib.request
 
-from toolshed.lock import Lock, PlatformPin, load_lock
+from toolshed.lock import PlatformPin, load_lock
 from toolshed.manifest import PLATFORMS, DotslashTool, Manifest, ManifestError
 
 _TIMEOUT_S = 300
