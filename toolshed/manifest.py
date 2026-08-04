@@ -25,7 +25,9 @@ _METHOD_KEYS = {
     "dotslash": _BASE_TOOL_KEYS
     | {"version", "url", "format", "archive_path", "platforms"},
     "uv-run": _RUNNER_TOOL_KEYS | {"module"},
-    "bun-run": _RUNNER_TOOL_KEYS | {"entry", "package"},
+    # bun resolves its own dependencies -- from the entry's package.json, or from
+    # the `bun x` package spec -- so it takes no requirements of ours.
+    "bun-run": _BASE_TOOL_KEYS | {"entry", "package"},
     "passthrough": _BASE_TOOL_KEYS,
 }
 _GROUP_KEYS = frozenset({"packages", "requirements", "override_env"})
@@ -167,7 +169,7 @@ class UvRunTool(RunnerTool):
 
 
 @dataclass(frozen=True)
-class BunRunTool(RunnerTool):
+class BunRunTool(Tool):
     entry: str | None = None
     package: str | None = None
 
@@ -301,24 +303,23 @@ def _parse_tool(name: str, table: dict) -> Tool:
     if method == "passthrough":
         return PassthroughTool(name=name, method=method)
 
-    runner_kwargs = {
-        "name": name,
-        "method": method,
-        "requirement": tuple(table.get("requirement", ())),
-        "requirements": tuple(table.get("requirements", ())),
-    }
-
     if method == "uv-run":
         if "module" not in table:
             raise ManifestError(f"{what}: uv-run method requires 'module'")
-        return UvRunTool(**runner_kwargs, module=table["module"])
+        return UvRunTool(
+            name=name,
+            method=method,
+            requirement=tuple(table.get("requirement", ())),
+            requirements=tuple(table.get("requirements", ())),
+            module=table["module"],
+        )
 
     entry, package = table.get("entry"), table.get("package")
     if (entry is None) == (package is None):
         raise ManifestError(
             f"{what}: bun-run method requires exactly one of 'entry' or 'package'"
         )
-    return BunRunTool(**runner_kwargs, entry=entry, package=package)
+    return BunRunTool(name=name, method=method, entry=entry, package=package)
 
 
 def parse_manifest(text: str) -> Manifest:
