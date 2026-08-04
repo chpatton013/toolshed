@@ -5,8 +5,8 @@ it on PATH with no render step, and a reviewer sees the diff a version bump
 causes. `render --check` is what keeps the two honest.
 
 Rendered files carry no path arithmetic, so any one of them can be copied
-anywhere and still work (see D3 in the design note). That is what makes a
-consumer able to take some tools from a release and others from a checkout.
+anywhere and still work. That is what lets a consumer take some tools from a
+release and others from a checkout.
 """
 
 import argparse

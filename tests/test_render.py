@@ -104,8 +104,8 @@ class UvRunRendering(unittest.TestCase):
     """
 
     def test_the_wrapper_contains_no_path_arithmetic(self):
-        """D3: rendered wrappers must be relocatable, so they may not derive
-        their own location from BASH_SOURCE the way chiiiirrus's do."""
+        """Rendered wrappers must be relocatable, so they may not derive their
+        own location from BASH_SOURCE."""
         out = _render(self._MANIFEST, "validate")
 
         self.assertNotIn("BASH_SOURCE", out)
@@ -236,8 +236,8 @@ class WriteBin(unittest.TestCase):
 
 
 class RenderedWrapperExecutes(unittest.TestCase):
-    """The end-to-end proof of D3: a rendered wrapper must run correctly from a
-    directory unrelated to the repo it was rendered in."""
+    """The end-to-end proof of relocatability: a rendered wrapper must run
+    correctly from a directory unrelated to the repo it was rendered in."""
 
     def test_a_wrapper_runs_from_an_unrelated_directory(self):
         manifest = parse_manifest("""

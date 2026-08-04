@@ -42,7 +42,7 @@ class Builtins(unittest.TestCase):
 
 
 class ExtraPaths(unittest.TestCase):
-    """D6: the engine merges its builtins with validators a repo defines itself,
+    """The engine merges its builtins with validators a repo defines itself,
     so extracting the engine into its own project later is a move, not a rewrite.
     """
 

@@ -1,10 +1,9 @@
 """Pinning tests.
 
-The cross-check against chiiiirrus is the point of this file. Those digests were
-maintained by hand in a different repo and are known to run, so reproducing them
-byte-for-byte proves our hashing and our URL substitution are both right. A
-disagreement means this code is wrong -- investigate before assuming upstream
-moved.
+The known-good digests below were established independently of this code, against
+assets confirmed to run. Reproducing them byte-for-byte is what proves both the
+hashing and the URL substitution correct, so a disagreement means this code is
+wrong -- investigate before assuming upstream moved the asset.
 """
 
 import os

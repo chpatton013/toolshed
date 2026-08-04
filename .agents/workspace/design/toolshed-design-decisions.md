@@ -1,9 +1,9 @@
 # Toolshed: design decisions
 
-Input: `.agents/workspace/plans/bin-distribution-separate-repo.md`, written in
-another repo. That plan carries 15 `USER NOTE` amendments that override its own
-body. This note resolves each one into a decision so the plan body can be
-rewritten as a buildable task list.
+Input: an inherited plan, written in another repo, carrying 15 `USER NOTE`
+amendments that override its own body. This note resolves each one into a
+decision. The inherited plan and the build plan it produced are both retired; see
+git history for either.
 
 The owner is unavailable to approve these (headless run), so each decision below
 records the reasoning and the alternative rejected. Anything the notes describe
@@ -89,9 +89,9 @@ renders to
 
 ```bash
 if [ -n "${TOOLSHED_SOURCE:-}" ]; then
-  requirements+=(--with "$TOOLSHED_SOURCE")
+  uv_args+=(--with "$TOOLSHED_SOURCE")
 else
-  requirements+=(--with "toolshed @ git+https://github.com/chpatton013/toolshed@main")
+  uv_args+=(--with "toolshed @ git+https://github.com/chpatton013/toolshed@main")
 fi
 ```
 
@@ -147,13 +147,15 @@ refactor. Deferred to follow-up.
 repo; fork into separate artifacts — the rendered `bin/`, the packaging tools,
 the validators.
 
-**Decision.** Three assets per release, plus `SHA256SUMS`:
+**Decision.** Three assets per release, plus `SHA256SUMS`. Asset names carry no
+version, so `releases/latest/download/<asset>` resolves; the tag names the
+install directory instead.
 
 | Asset | Contents | Consumer |
 | --- | --- | --- |
-| `toolshed-bin-<version>.tar.gz` | `bin/` only | wants the tools on `PATH` (mode 1) |
+| `toolshed-bin.tar.gz` | `bin/` only | wants the tools on `PATH` (mode 1) |
 | `toolshed-<version>-py3-none-any.whl` | `toolshed` package: renderer + validator engine + builtin validators + templates | renders its own `bin/` from its own `tools.toml`, and reuses the validator engine |
-| `toolshed-validators-<version>.tar.gz` | `validators/` | wants this repo's manifest validators against its own manifest |
+| `toolshed-validators.tar.gz` | `validators/` | wants this repo's manifest validators against its own manifest |
 
 The wheel carries the validator *engine* because a consumer who renders their
 own tools needs it to run anything; `validators/` ships separately because it is

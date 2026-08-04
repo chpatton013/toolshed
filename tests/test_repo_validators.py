@@ -1,7 +1,7 @@
 """Tests for this repo's own validators in `validators/`.
 
 They are loaded the way the engine loads them -- by file location through the
-registry -- so these tests also exercise the D6 extra-path mechanism against the
+registry -- so these tests also exercise the extra-path mechanism against the
 real directory rather than a fixture.
 """
 
