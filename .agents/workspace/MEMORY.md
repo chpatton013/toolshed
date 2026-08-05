@@ -26,3 +26,10 @@ repo worth remembering. Used for quick-reference, not as an archive.
 - `design/toolshed-design-decisions.md` is the durable record of why the manifest
   schema and the wrapper preamble look the way they do. Its decisions resolve
   amendments the original plan carried, so the code alone does not explain them.
+
+- Two override variables exist because two packages get pinned back:
+  `TOOLSHED_SOURCE` for `toolshed` itself, `LINT_TRAP_SOURCE` for the validator
+  engine (`lint-trap`, extracted per D11). A change to the engine now costs two
+  releases to land here -- cut and tag `lint-trap`, then bump the pinned spec in
+  this repo's `tools.toml` -- there is no way to exercise an unreleased engine
+  change except by setting `LINT_TRAP_SOURCE` to a local checkout.

@@ -3,18 +3,24 @@
 See [README.md](../README.md) for what toolshed does and how the manifest works.
 This file covers what you need to know to change it.
 
-## Set TOOLSHED_SOURCE
+## Set TOOLSHED_SOURCE and LINT_TRAP_SOURCE
 
-The rendered wrappers in `bin/` resolve the `toolshed` package from a pinned
-`git+https` URL. Until this repo is published, that URL does not resolve, so
-every Python tool in `bin/` needs the override pointed at the checkout:
+The rendered wrappers in `bin/` resolve `toolshed` and `lint-trap` (the
+validator engine, a separate package) from pinned `git+https` URLs. Working
+from this checkout, override both so `validate`, `pre-commit`, and `test`
+exercise your working tree instead of the pinned tags:
 
 ```bash
-TOOLSHED_SOURCE=. ./validate
+TOOLSHED_SOURCE=. LINT_TRAP_SOURCE=<path-to-lint-trap-checkout> ./validate
 ```
 
-Set it even after publication when you want to exercise your working tree instead
-of the pinned upstream. CI sets it for the same reason.
+`render` and `test` only need `TOOLSHED_SOURCE`; `LINT_TRAP_SOURCE` only
+matters for tools that load the engine (`validate`, `pre-commit`) or exercise
+it as a test dependency (`test_repo_validators.py`). Set both even after
+publication when you want to exercise a working tree instead of a pinned
+upstream. CI sets `TOOLSHED_SOURCE` for the same reason, but leaves
+`LINT_TRAP_SOURCE` unset -- there is no local `lint-trap` checkout on the
+runner, so CI exercises the pinned tag instead.
 
 Install the git hook with the variable seeded, so an ordinary `git commit` works:
 
@@ -25,9 +31,12 @@ TOOLSHED_SOURCE=. ./bin/pre-commit --install --env TOOLSHED_SOURCE=.
 ## The loop
 
 ```bash
-TOOLSHED_SOURCE=. ./render      # regenerate bin/ after a manifest change
-TOOLSHED_SOURCE=. ./bin/test    # unit tests
-TOOLSHED_SOURCE=. ./validate    # the file-validation suite
+# regenerate bin/ after a manifest change
+TOOLSHED_SOURCE=. ./render
+# unit tests
+TOOLSHED_SOURCE=. LINT_TRAP_SOURCE=<path> ./bin/test
+# the file-validation suite
+TOOLSHED_SOURCE=. LINT_TRAP_SOURCE=<path> ./validate
 ```
 
 Run `./bin/test` from the repo root. Its `args` hold relative paths.
@@ -80,9 +89,12 @@ text search, not a TOML round-trip.** It expects that line inside the tool's own
 `[tool.<name>]` table, as a single line reading `version = "<something>"`. Keep
 it on one line; a version spread across a line continuation would not match.
 
-**A validator that shells out to a new binary** needs that binary added to
-`tools.toml` and the validator listed in `.validator.toml`. A validator with no
-table there never runs.
+**A validator that shells out to a new binary** belongs in `lint-trap`
+(`chpatton013/lint-trap`) if it is general enough to ship as a builtin, or in
+this repo's `validators/` if it is repo-specific (like `manifest-sync` and
+`manifest-pinned`). Either way it needs that binary added to `tools.toml` and
+the validator listed in `.validator.toml` here -- a validator with no table
+there never runs.
 
 ## Layout
 
@@ -99,8 +111,9 @@ toolshed/
   upstream.py         check a dotslash tool's github releases for a newer version
   fetch.py            the one urllib call pin.py and upstream.py both use
   templates/          one per rendered method
-  validator/          the validation engine and its builtin validators
-validators/           this repo's own validators (manifest-sync, manifest-pinned)
+validators/           this repo's own validators (manifest-sync, manifest-pinned);
+                      the engine and its builtins live in lint-trap, pinned like
+                      toolshed itself
 tests/
 scripts/bootstrap/    dotslash runtime installer
 install.sh            consumer-side installer

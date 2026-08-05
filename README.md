@@ -35,7 +35,7 @@ from a checkout.
 | Asset | Contents | Use it when |
 | --- | --- | --- |
 | `toolshed-bin.tar.gz` | `bin/` | You want the tools on `PATH`. |
-| `toolshed-<version>-py3-none-any.whl` | The renderer and the validator engine | You want to render your own `bin/` from your own manifest. |
+| `toolshed-<version>-py3-none-any.whl` | The renderer | You want to render your own `bin/` from your own manifest. |
 | `toolshed-validators.tar.gz` | `validators/` | You want this repo's manifest checks against your own manifest. |
 | `SHA256SUMS` | Checksums for the above | Always. `install.sh` verifies against it. |
 
@@ -159,14 +159,19 @@ fixes it can, `--dirty` limits it to staged files.
 installs it as a git pre-commit hook. `--env` seeds a variable the hook needs;
 see [AGENTS.md](AGENTS.md) for why this repo needs that one.
 
-`.validator.toml` maps each validator to the files it covers. Two of them are
-specific to this repo and live in `validators/`:
+The engine behind `validate` and `pre-commit` is
+[`lint-trap`](https://github.com/chpatton013/lint-trap), a separate package
+this repo pins like any other dependency (see `[requirements.lint-trap]` in
+`tools.toml`). `.validator.toml` configures that package: it maps each
+validator to the files it covers. Two validators are specific to this repo and
+live in `validators/`:
 
 - `manifest-sync` — `bin/` matches `tools.toml`.
 - `manifest-pinned` — every dotslash tool has a digest for all four platforms.
 
-Point `[validators] paths` at your own directory to add more. They merge with the
-builtins, and a name collision is an error rather than a silent shadow.
+Point `[validators] paths` at your own directory to add more. They merge with
+`lint-trap`'s builtins, and a name collision is an error rather than a silent
+shadow.
 
 ## Tool resolution
 
@@ -178,6 +183,7 @@ A rendered wrapper looks for its runner (`uv` or `bun`) in this order:
 It never looks in its own directory. A script that runs whatever sits beside it
 executes anything that can be written there.
 
-Validators that shell out to a pinned binary check `$TOOLSHED_BIN_DIR`, then the
-repo's own `bin/`, then `PATH`. A repo pins tools so every checkout formats code
-the same way, so those pins win over a different version already on `PATH`.
+Validators that shell out to a pinned binary follow a contract `lint-trap`
+implements: check `$LINT_TRAP_BIN_DIR`, then the repo's own `bin/`, then
+`PATH`. A repo pins tools so every checkout formats code the same way, so
+those pins win over a different version already on `PATH`.

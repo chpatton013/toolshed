@@ -173,7 +173,8 @@ it is omitted.
 Each of these is a "later" in the notes, and each is large enough to warrant its
 own plan:
 
-1. Extract the validator engine into its own repo, consumed as a pinned tool.
+1. ~~Extract the validator engine into its own repo, consumed as a pinned
+   tool.~~ Done -- see D11.
 2. `render --manifest <path>` against a foreign `tools.toml`, plus the exec
    wrapper that resolves a tool across federated bin directories.
 3. Publish the validators so downstream manifest authors can reuse them (D7
@@ -200,6 +201,47 @@ from a checkout.
 `install.sh` is generalized per the note: `--repo`, `--version`, `--asset`,
 `--dest` all overridable, so someone publishing their own toolshed-rendered
 tools can reuse the script unmodified.
+
+## D11. Extracting the validator engine into `lint-trap`
+
+D6 built the engine/repo-specific split so this extraction would be a move, not
+a refactor; D8 item 1 named it as a follow-up. See
+`plans/extract-validator-engine.md` for the sequencing.
+
+**Decision.** `toolshed/validator/` became its own repository and package,
+`lint-trap` (`chpatton013/lint-trap`, importable as `lint_trap`), published and
+tagged at `v0.1.0`. This repo deleted its copy and now consumes `lint-trap`
+back exactly the way it already consumed `toolshed` itself (D4): a
+`[requirements.lint-trap]` group in `tools.toml` with
+`override_env = "LINT_TRAP_SOURCE"`. `validators/manifest_sync.py` and
+`validators/manifest_pinned.py` import `lint_trap.base` instead of
+`toolshed.validator.base`; `tests/test_repo_validators.py` now exercises the
+engine as an external dependency instead of an in-repo module.
+
+The two repos pin nothing of each other going backward -- `lint-trap` has no
+dependency on `toolshed` -- so there is no bootstrapping cycle, only the
+ordinary "cut a `lint-trap` release, then re-pin it here" dance that any two
+of this repo's dependencies already have.
+
+**`[requirements.python-validators]` survives as its own explicit group**
+rather than folding into `lint-trap[validators]`. The reasoning is D4's escape
+hatch, restated for two overridable groups instead of one: `override_env`
+replaces its group's packages wholesale, so pinning
+`lint-trap[validators] @ git+...` and overriding it with
+`LINT_TRAP_SOURCE=../lint-trap` would render `--with ../lint-trap` -- a local
+path with no extras -- and every third-party-backed builtin (black,
+pyupgrade, yamllint) would fail to import. Keeping `python-validators` as a
+plain, always-resolved group means overriding `LINT_TRAP_SOURCE` only ever
+swaps the engine, never the tools it shells out to. This also means the git
+spec for `lint-trap` itself omits the `[validators]` extra: it would just
+install black/pyupgrade/yamllint a second time.
+
+**Consequence for CI.** `ci.yml` and `release.yml` keep `TOOLSHED_SOURCE: .`
+(a local checkout is always present) but do not set `LINT_TRAP_SOURCE`: there
+is no sibling `lint-trap` checkout on the runner, so CI resolves the pinned
+`git+https` tag for the engine on every run. That is a feature, not a gap --
+it is the thing that proves the pin is correct, the same role
+`TOOLSHED_TEST_NETWORK=1` plays for `toolshed/pin.py`.
 
 ## Risks
 
