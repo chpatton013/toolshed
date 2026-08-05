@@ -7,6 +7,15 @@
 
 # ---- reusable dependency sets ----------------------------------------------
 
+# The validation engine, extracted to its own repo. Its `validators` extra
+# would duplicate python-validators below, so the git spec omits it -- adding
+# it back here would just install black/pyupgrade/yamllint a second time.
+# Overridable so a checkout can exercise its working tree, the same way as
+# toolshed itself below.
+[requirements.lint-trap]
+packages = ["lint-trap @ git+https://github.com/chpatton013/lint-trap@v0.1.0"]
+override_env = "LINT_TRAP_SOURCE"
+
 # The Python engines behind the builtin validators. toolshed declares these as
 # its `validators` extra too, but naming them here keeps the rendered wrapper
 # readable and lets the override below swap the package without losing them.
@@ -77,8 +86,8 @@ macos-x86_64 = { asset = "macos-amd64" }
 
 [tool.pre-commit]
 method = "uv-run"
-module = "toolshed.validator.precommit"
-requirements = ["python-validators", "toolshed"]
+module = "lint_trap.precommit"
+requirements = ["python-validators", "lint-trap", "toolshed"]
 
 [tool.render]
 method = "uv-run"
@@ -131,7 +140,7 @@ module = "unittest"
 args = ["discover", "-s", "tests", "-t", "."]
 # The suite covers pinning, which needs the hash implementation.
 requirement = ["blake3>=1.0"]
-requirements = ["python-validators", "toolshed"]
+requirements = ["python-validators", "lint-trap", "toolshed"]
 
 [tool.uv]
 method = "dotslash"
@@ -148,8 +157,8 @@ macos-x86_64 = { triple = "x86_64-apple-darwin" }
 
 [tool.validate]
 method = "uv-run"
-module = "toolshed.validator"
-requirements = ["python-validators", "toolshed"]
+module = "lint_trap"
+requirements = ["python-validators", "lint-trap", "toolshed"]
 
 [tool.yamlfmt]
 method = "dotslash"

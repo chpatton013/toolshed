@@ -10,15 +10,12 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "chpatton013" }]
-dependencies = ["jinja2>=3.1", "pathspec>=0.12"]
+dependencies = ["jinja2>=3.1"]
 
 [project.optional-dependencies]
 # `render pin` hashes downloaded assets; blake3 ships a native extension, so it
 # stays out of the base install for consumers who only render.
 pin = ["blake3>=1.0"]
-# Third-party engines behind the builtin validators. The registry imports every
-# builtin, so anything running `validate` needs all of these.
-validators = ["black", "pyupgrade", "yamllint"]
 
 [project.urls]
 Homepage = "https://github.com/chpatton013/toolshed"

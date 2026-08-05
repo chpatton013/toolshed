@@ -348,6 +348,99 @@ class RenderedWrapperExecutes(unittest.TestCase):
             self.assertNotIn("git+https", overridden.stdout)
 
 
+class TwoOverrideGroupsRendering(unittest.TestCase):
+    """A wrapper may carry more than one overridable requirements group at
+    once (e.g. TOOLSHED_SOURCE and LINT_TRAP_SOURCE side by side). Nothing
+    before this test exercised that shape."""
+
+    _MANIFEST = """
+    [requirements.alpha]
+    packages = ["alpha-pkg @ git+https://example.invalid/alpha@main"]
+    override_env = "ALPHA_SOURCE"
+
+    [requirements.beta]
+    packages = ["beta-pkg @ git+https://example.invalid/beta@main"]
+    override_env = "BETA_SOURCE"
+
+    [tool.shout]
+    method = "uv-run"
+    module = "shout"
+    requirements = ["alpha", "beta"]
+    """
+
+    def test_both_conditionals_render_in_declaration_order(self):
+        out = self._render()
+
+        alpha_at = out.index('if [ -n "${ALPHA_SOURCE:-}" ]')
+        beta_at = out.index('if [ -n "${BETA_SOURCE:-}" ]')
+        self.assertLess(alpha_at, beta_at)
+        # The fixed uv_args seeding (bash 3.2: never expand an empty array
+        # under set -u) still comes first, ahead of either conditional.
+        self.assertLess(out.index("uv_args=(run --no-project)"), alpha_at)
+
+    def test_neither_env_var_set_resolves_both_pinned_specs(self):
+        out = self._render()
+
+        self.assertIn(
+            '--with "alpha-pkg @ git+https://example.invalid/alpha@main"', out
+        )
+        self.assertIn('--with "beta-pkg @ git+https://example.invalid/beta@main"', out)
+
+    def test_one_group_overridden_resolves_one_of_each(self):
+        out = self._run(alpha="/local/alpha")
+
+        self.assertIn("--with /local/alpha", out)
+        self.assertIn("--with beta-pkg @ git+https://example.invalid/beta@main", out)
+        self.assertNotIn("alpha-pkg @ git+https", out)
+
+    def test_both_groups_overridden_resolves_both_locally(self):
+        out = self._run(alpha="/local/alpha", beta="/local/beta")
+
+        self.assertIn("--with /local/alpha", out)
+        self.assertIn("--with /local/beta", out)
+        self.assertNotIn("git+https", out)
+
+    def _render(self) -> str:
+        manifest = parse_manifest(self._MANIFEST)
+        return render_tool(manifest.tools["shout"], manifest, Lock({}))
+
+    def _run(self, alpha: str | None = None, beta: str | None = None) -> str:
+        """Render the wrapper and run it against a fake `uv` that echoes its
+        argv, from a directory unrelated to the repo -- proof that resolution
+        happens at run time, not at render time."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            bin_dir = root / "bin"
+            manifest = parse_manifest(self._MANIFEST)
+            write_bin(manifest, Lock({}), bin_dir)
+
+            fake_bin = root / "fake"
+            fake_bin.mkdir()
+            fake_uv = fake_bin / "uv"
+            fake_uv.write_text('#!/bin/bash\necho "ARGS: $*"\n')
+            fake_uv.chmod(0o755)
+
+            env = {**os.environ, "PATH": str(fake_bin)}
+            env.pop("ALPHA_SOURCE", None)
+            env.pop("BETA_SOURCE", None)
+            if alpha is not None:
+                env["ALPHA_SOURCE"] = alpha
+            if beta is not None:
+                env["BETA_SOURCE"] = beta
+
+            elsewhere = root / "elsewhere"
+            elsewhere.mkdir()
+            result = subprocess.run(
+                [str(bin_dir / "shout")],
+                cwd=elsewhere,
+                capture_output=True,
+                text=True,
+                env=env,
+            )
+            self.assertEqual(0, result.returncode, result.stderr)
+            return result.stdout
+
+
 class Cli(unittest.TestCase):
     def test_check_combined_with_pin_is_rejected(self):
         """Otherwise `render --check pin` would silently pin and report nothing."""

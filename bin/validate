@@ -18,6 +18,14 @@ uv_args+=(--with "black")
 uv_args+=(--with "pyupgrade")
 uv_args+=(--with "yamllint")
 
+# Set LINT_TRAP_SOURCE to resolve these specs from somewhere
+# else -- a local checkout, a different tag -- without re-rendering this file.
+if [ -n "${LINT_TRAP_SOURCE:-}" ]; then
+  uv_args+=(--with "$LINT_TRAP_SOURCE")
+else
+  uv_args+=(--with "lint-trap @ git+https://github.com/chpatton013/lint-trap@v0.1.0")
+fi
+
 # Set TOOLSHED_SOURCE to resolve these specs from somewhere
 # else -- a local checkout, a different tag -- without re-rendering this file.
 if [ -n "${TOOLSHED_SOURCE:-}" ]; then
@@ -26,4 +34,4 @@ else
   uv_args+=(--with "toolshed @ git+https://github.com/chpatton013/toolshed@v0.1.0")
 fi
 
-exec "$uv" "${uv_args[@]}" python -m toolshed.validator "$@"
+exec "$uv" "${uv_args[@]}" python -m lint_trap "$@"

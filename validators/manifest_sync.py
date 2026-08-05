@@ -11,7 +11,7 @@ import threading
 
 from toolshed.lock import load_lock
 from toolshed.render import check_bin
-from toolshed.validator.base import ValidationResult, Validator
+from lint_trap.base import ValidationResult, Validator
 from toolshed.manifest import load_manifest
 
 

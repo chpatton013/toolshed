@@ -11,7 +11,7 @@ import subprocess
 import tempfile
 import unittest
 
-from toolshed.validator.registry import all_validators
+from lint_trap.registry import all_validators
 
 _REPO = pathlib.Path(__file__).resolve().parent.parent
 _VALIDATORS_DIR = _REPO / "validators"

@@ -9,7 +9,7 @@ import pathlib
 
 from toolshed.lock import load_lock
 from toolshed.manifest import load_manifest
-from toolshed.validator.base import ValidationResult, Validator
+from lint_trap.base import ValidationResult, Validator
 
 
 class ManifestPinnedValidator(Validator):
