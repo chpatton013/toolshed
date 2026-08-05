@@ -17,7 +17,7 @@ packages = ["black", "pyupgrade", "yamllint"]
 # `TOOLSHED_SOURCE=. ./validate`. Released wrappers with the variable unset
 # resolve the pinned spec instead.
 [requirements.toolshed]
-packages = ["toolshed @ git+https://github.com/chpatton013/toolshed@main"]
+packages = ["toolshed @ git+https://github.com/chpatton013/toolshed@v0.1.0"]
 override_env = "TOOLSHED_SOURCE"
 
 # ---- tools, sorted by name -------------------------------------------------

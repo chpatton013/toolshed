@@ -23,7 +23,7 @@ uv_args+=(--with "yamllint")
 if [ -n "${TOOLSHED_SOURCE:-}" ]; then
   uv_args+=(--with "$TOOLSHED_SOURCE")
 else
-  uv_args+=(--with "toolshed @ git+https://github.com/chpatton013/toolshed@main")
+  uv_args+=(--with "toolshed @ git+https://github.com/chpatton013/toolshed@v0.1.0")
 fi
 
 exec "$uv" "${uv_args[@]}" python -m toolshed.validator.precommit "$@"
