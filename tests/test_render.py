@@ -1,13 +1,17 @@
+import contextlib
+import io
+import json
 import os
 import pathlib
 import stat
 import subprocess
 import tempfile
 import unittest
+from unittest import mock
 
-from toolshed.lock import Lock, PlatformPin
-from toolshed.manifest import parse_manifest
-from toolshed.render import RenderError, render_tool, write_bin
+from toolshed.lock import Lock, PlatformPin, load_lock
+from toolshed.manifest import ManifestError, load_manifest, parse_manifest
+from toolshed.render import RenderError, check_bin, render_tool, run_update, write_bin
 
 _LOCK = Lock(
     {
@@ -351,6 +355,203 @@ class Cli(unittest.TestCase):
 
         with self.assertRaises(SystemExit):
             main(["--check", "pin"])
+
+    def test_check_combined_with_update_is_rejected(self):
+        from toolshed.render import main
+
+        with self.assertRaises(SystemExit):
+            main(["--check", "update"])
+
+
+# One line per tool, "$NAME" and "$VERSION" swapped in, so the URL's brace
+# placeholders don't collide with an f-string's.
+_UPDATE_TOOL_TEMPLATE = r"""
+[tool.$NAME]
+method = "dotslash"
+version = "$VERSION"
+url = "https://github.com/o/$NAME/releases/download/v{version}/$NAME-{asset}"
+
+[tool.$NAME.platforms]
+macos-aarch64 = { asset = "macos-aarch64" }
+macos-x86_64 = { asset = "macos-x86_64" }
+linux-aarch64 = { asset = "linux-aarch64" }
+linux-x86_64 = { asset = "linux-x86_64" }
+"""
+
+_UPDATE_PLATFORMS = ["macos-aarch64", "macos-x86_64", "linux-aarch64", "linux-x86_64"]
+
+# Upstream versions a stubbed discover_versions() offers per (fake) repo.
+_UPDATE_VERSIONS = {
+    "alpha": ["1.0.0", "2.0.0"],  # has an update
+    "beta": ["1.0.0"],  # already current
+    "gamma": ["1.0.0", "2.0.0"],  # has an update, but one platform 404s
+}
+
+
+def _tool_toml(name: str, version: str) -> str:
+    return _UPDATE_TOOL_TEMPLATE.replace("$NAME", name).replace("$VERSION", version)
+
+
+class UpdateCommand(unittest.TestCase):
+    """`render update`, with upstream discovery and asset fetches stubbed out.
+
+    `discover_source` stays real -- it is pure URL parsing, no network -- so
+    this also exercises T1's inference against the URL shapes above. Only the
+    two network calls (`discover_versions`, the asset fetch inside
+    `pin_platform`) are stubbed.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = pathlib.Path(self.tmp.name)
+        self.manifest_path = self.root / "tools.toml"
+        self.lock_path = self.root / "tools.lock.toml"
+        self.bin_dir = self.root / "bin"
+
+        self.manifest_path.write_text(
+            "".join(_tool_toml(name, "1.0.0") for name in sorted(_UPDATE_VERSIONS))
+        )
+
+        # Pre-pin every tool at its current version, so write_bin can render
+        # a tool that `update` decides not to touch (beta) or rolls back
+        # (gamma) without tripping the missing-platform check.
+        lock = Lock({})
+        for name in _UPDATE_VERSIONS:
+            for i, platform in enumerate(_UPDATE_PLATFORMS):
+                lock = lock.with_pin(
+                    name, platform, PlatformPin(size=10 + i, digest=f"{i:064x}")
+                )
+        self.lock_path.write_text(lock.dumps())
+        write_bin(load_manifest(self.manifest_path), lock, self.bin_dir)
+
+        self.original_manifest_text = self.manifest_path.read_text()
+
+    def _fake_discover_versions(self, source):
+        return _UPDATE_VERSIONS[source.repo]
+
+    def _fake_fetch(self, url, headers=None):
+        if "/gamma/" in url and "v2.0.0" in url and "linux-x86_64" in url:
+            raise ManifestError("simulated 404")
+        return f"asset bytes for {url}".encode()
+
+    def _run(self, tool_names=(), **kwargs):
+        with (
+            mock.patch(
+                "toolshed.upstream.discover_versions",
+                side_effect=self._fake_discover_versions,
+            ),
+            mock.patch("toolshed.pin.fetch", side_effect=self._fake_fetch),
+        ):
+            return run_update(
+                self.manifest_path,
+                self.lock_path,
+                self.bin_dir,
+                list(tool_names),
+                allow_prerelease=False,
+                json_output=kwargs.get("json_output", False),
+                report_path=kwargs.get("report_path"),
+            )
+
+    def test_a_successful_bump_changes_one_line_lock_and_bin(self):
+        status = self._run()
+
+        new_text = self.manifest_path.read_text()
+        old_lines = self.original_manifest_text.splitlines()
+        new_lines = new_text.splitlines()
+        diff = [(a, b) for a, b in zip(old_lines, new_lines) if a != b]
+        self.assertEqual(1, len(diff))
+        self.assertEqual('version = "1.0.0"', diff[0][0])
+        self.assertEqual('version = "2.0.0"', diff[0][1])
+
+        lock = load_lock(self.lock_path)
+        for platform in _UPDATE_PLATFORMS:
+            pin = lock.get("alpha", platform)
+            self.assertIsNotNone(pin)
+            # setUp seeded every pin's digest as a zero-padded index; a real
+            # re-pin replaces it with the (fake) asset's own digest.
+            self.assertNotEqual(f"{_UPDATE_PLATFORMS.index(platform):064x}", pin.digest)
+
+        rendered = (self.bin_dir / "alpha").read_text()
+        body = json.loads(rendered.split("\n", 1)[1])
+        self.assertIn(
+            "v2.0.0", body["platforms"]["macos-aarch64"]["providers"][0]["url"]
+        )
+
+        self.assertNotEqual(0, status)  # gamma still fails in this same run
+
+    def test_render_check_is_clean_afterward(self):
+        self._run()
+
+        manifest = load_manifest(self.manifest_path)
+        lock = load_lock(self.lock_path)
+        problems = check_bin(manifest, lock, self.bin_dir)
+
+        self.assertEqual([], problems)
+
+    def test_a_platform_fetch_failure_rolls_back_that_tool_only(self):
+        status = self._run()
+
+        new_text = self.manifest_path.read_text()
+        # gamma's line is untouched; only alpha's changed.
+        self.assertIn('[tool.gamma]\nmethod = "dotslash"\nversion = "1.0.0"', new_text)
+
+        old_lock_text = load_lock(self.lock_path)
+        for platform in _UPDATE_PLATFORMS:
+            pin = old_lock_text.get("gamma", platform)
+            self.assertIsNotNone(pin)
+            self.assertEqual(f"{_UPDATE_PLATFORMS.index(platform):064x}", pin.digest)
+
+        self.assertEqual(1, status)  # a failure makes the run report non-zero
+
+    def test_beta_reports_current_with_no_change(self):
+        self._run()
+
+        # beta had no update available, so its manifest line and pins are
+        # exactly what setUp wrote.
+        self.assertIn(
+            '[tool.beta]\nmethod = "dotslash"\nversion = "1.0.0"',
+            self.manifest_path.read_text(),
+        )
+
+    def test_report_marks_the_failed_tool(self):
+        # `pin_tools` prints its own per-platform progress to stdout, so the
+        # report line assertions read from `--report <path>` instead, to keep
+        # this test from depending on that unrelated output.
+        report_path = self.root / "report.txt"
+        self._run(report_path=report_path)
+
+        report = report_path.read_text()
+        self.assertIn("alpha: 1.0.0 -> 2.0.0 (updated)", report)
+        self.assertIn("beta: 1.0.0 (current)", report)
+        self.assertIn("gamma: 1.0.0 -> 2.0.0 (failed:", report)
+
+    def test_report_path_writes_to_a_file_instead_of_stdout(self):
+        report_path = self.root / "report.txt"
+
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            self._run(report_path=report_path)
+
+        # The summary line goes only to the file; stdout still carries
+        # `pin_tools`'s own per-platform progress, which is unrelated output.
+        self.assertNotIn("alpha: 1.0.0 -> 2.0.0 (updated)", buf.getvalue())
+        self.assertIn("alpha: 1.0.0 -> 2.0.0 (updated)", report_path.read_text())
+
+    def test_json_report_is_parseable(self):
+        report_path = self.root / "report.json"
+        self._run(json_output=True, report_path=report_path)
+
+        records = {r["name"]: r for r in json.loads(report_path.read_text())}
+        self.assertEqual("updated", records["alpha"]["outcome"])
+        self.assertEqual("2.0.0", records["alpha"]["newest"])
+        self.assertEqual("current", records["beta"]["outcome"])
+        self.assertIsNone(records["beta"]["newest"])
+        self.assertTrue(records["gamma"]["outcome"].startswith("failed:"))
+
+    def test_an_unknown_tool_name_errors_like_render_pin_does(self):
+        with self.assertRaises(ManifestError):
+            self._run(tool_names=["not-a-tool"])
 
 
 if __name__ == "__main__":

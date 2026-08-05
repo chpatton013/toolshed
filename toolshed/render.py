@@ -15,9 +15,11 @@ import json
 import pathlib
 import sys
 import tempfile
+from dataclasses import dataclass
 
 import jinja2
 
+from toolshed import upstream
 from toolshed.lock import Lock, load_lock
 from toolshed.manifest import (
     PLATFORMS,
@@ -185,6 +187,128 @@ def check_bin(manifest: Manifest, lock: Lock, bin_dir: pathlib.Path) -> list[str
     return problems
 
 
+@dataclass(frozen=True)
+class UpdateResult:
+    """One tool's outcome from a `render update` run."""
+
+    name: str
+    current: str
+    newest: str | None
+    outcome: str  # "current", "updated", or "failed: <reason>"
+
+
+def _check_updates(
+    manifest: Manifest,
+    manifest_path: pathlib.Path,
+    lock_path: pathlib.Path,
+    tool_names: list[str],
+    allow_prerelease: bool,
+) -> list[UpdateResult]:
+    """Bump every named dotslash tool that has a newer upstream release.
+
+    Each tool is rewritten, reloaded, and re-pinned on its own: a failure --
+    an unsupported source, a network error, an asset that 404s after the bump
+    -- restores that tool's `tools.toml` text and leaves its lockfile entries
+    as they were, then moves on. One bad tool must not block the rest of the
+    run.
+    """
+    from toolshed.pin import pin_tools
+
+    candidates = {t.name: t for t in manifest.dotslash_tools()}
+    unknown = sorted(set(tool_names) - candidates.keys())
+    if unknown:
+        raise ManifestError(
+            f"not dotslash tool(s) in the manifest: {', '.join(unknown)}"
+        )
+    selected = tool_names or [t.name for t in manifest.dotslash_tools()]
+
+    results = []
+    for name in selected:
+        tool = candidates[name]
+        source = upstream.discover_source(tool)
+        if isinstance(source, upstream.Unsupported):
+            results.append(
+                UpdateResult(name, tool.version, None, f"failed: {source.reason}")
+            )
+            continue
+
+        try:
+            versions = upstream.discover_versions(source)
+        except ManifestError as e:
+            results.append(UpdateResult(name, tool.version, None, f"failed: {e}"))
+            continue
+
+        newest = upstream.latest_version(versions, tool.version, allow_prerelease)
+        if newest is None:
+            results.append(UpdateResult(name, tool.version, None, "current"))
+            continue
+
+        previous_text = manifest_path.read_text()
+        try:
+            new_text = upstream.rewrite_version(previous_text, name, newest)
+            manifest_path.write_text(new_text)
+            reloaded = load_manifest(manifest_path)
+            pin_tools(reloaded, lock_path, [name])
+        except (ManifestError, RenderError, OSError) as e:
+            manifest_path.write_text(previous_text)
+            results.append(UpdateResult(name, tool.version, newest, f"failed: {e}"))
+            continue
+
+        results.append(UpdateResult(name, tool.version, newest, "updated"))
+
+    return results
+
+
+def _format_report(results: list[UpdateResult], json_output: bool) -> str:
+    if json_output:
+        records = [
+            {
+                "name": r.name,
+                "current": r.current,
+                "newest": r.newest,
+                "outcome": r.outcome,
+            }
+            for r in results
+        ]
+        return json.dumps(records, indent=2) + "\n"
+
+    lines = []
+    for r in results:
+        if r.newest is None:
+            lines.append(f"{r.name}: {r.current} ({r.outcome})")
+        else:
+            lines.append(f"{r.name}: {r.current} -> {r.newest} ({r.outcome})")
+    return "\n".join(lines) + "\n"
+
+
+def run_update(
+    manifest_path: pathlib.Path,
+    lock_path: pathlib.Path,
+    bin_dir: pathlib.Path,
+    tool_names: list[str],
+    allow_prerelease: bool,
+    json_output: bool,
+    report_path: pathlib.Path | None,
+) -> int:
+    manifest = load_manifest(manifest_path)
+    results = _check_updates(
+        manifest, manifest_path, lock_path, tool_names, allow_prerelease
+    )
+
+    # Reload: tools.toml may hold bumps _check_updates just wrote.
+    manifest = load_manifest(manifest_path)
+    lock = load_lock(lock_path)
+    write_bin(manifest, lock, bin_dir)
+
+    report = _format_report(results, json_output)
+    if report_path is not None:
+        report_path.write_text(report)
+    else:
+        sys.stdout.write(report)
+
+    return 1 if any(r.outcome.startswith("failed") for r in results) else 0
+
+
 def _paths(root: pathlib.Path) -> tuple[pathlib.Path, pathlib.Path, pathlib.Path]:
     return root / "tools.toml", root / "tools.lock.toml", root / "bin"
 
@@ -212,6 +336,26 @@ def main(argv: list[str] | None = None) -> int:
     pin_parser.add_argument(
         "tools", nargs="*", help="Tools to pin (default: every dotslash tool)."
     )
+    update_parser = subparsers.add_parser(
+        "update",
+        help="Check upstream releases, bump versions in tools.toml, and re-pin.",
+    )
+    update_parser.add_argument(
+        "tools", nargs="*", help="Tools to check (default: every dotslash tool)."
+    )
+    update_parser.add_argument(
+        "--allow-prerelease",
+        action="store_true",
+        help="Offer prerelease versions too (dropped by default).",
+    )
+    update_parser.add_argument(
+        "--json", action="store_true", help="Emit the report as JSON."
+    )
+    update_parser.add_argument(
+        "--report",
+        type=pathlib.Path,
+        help="Write the report here instead of stdout.",
+    )
     args = parser.parse_args(argv)
 
     manifest_path, lock_path, bin_dir = _paths(args.root)
@@ -230,6 +374,24 @@ def main(argv: list[str] | None = None) -> int:
             return pin_tools(manifest, lock_path, args.tools)
         except (ManifestError, RenderError) as e:
             print(f"render pin: {e}", file=sys.stderr)
+            return 1
+
+    if args.command == "update":
+        if args.check:
+            parser.error("--check cannot be combined with update")
+
+        try:
+            return run_update(
+                manifest_path,
+                lock_path,
+                bin_dir,
+                args.tools,
+                allow_prerelease=args.allow_prerelease,
+                json_output=args.json,
+                report_path=args.report,
+            )
+        except (ManifestError, RenderError, OSError) as e:
+            print(f"render update: {e}", file=sys.stderr)
             return 1
 
     try:

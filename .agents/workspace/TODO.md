@@ -6,17 +6,24 @@ Agent-owned task list. New items arrive via `.agents/workspace/INBOX.md`
 
 ## Active
 
-- **Publish the repo and cut v0.1.0.** Everything else is blocked behind this.
-  `tools.toml` pins `toolshed @ git+https://github.com/chpatton013/toolshed@main`,
-  which does not resolve yet, so `bin/`'s Python tools only work with
-  `TOOLSHED_SOURCE` set. After the first push, re-pin that spec to a tag and
-  confirm a wrapper works with the variable unset. Neither CI workflow has ever
-  run.
+_Nothing currently active._
 
 ## Completed
 
 - Manifest, lockfile, renderer, pinning, validator suite, CI and release
   workflows, installer, docs. See `plans/toolshed-build.md`.
+
+- **Publish the repo and cut v0.1.0.** Pushed to
+  `github.com/chpatton013/toolshed` (public), tagged and released `v0.1.0`
+  (CI and the release workflow both passed), and re-pinned `tools.toml` to
+  `toolshed @ git+https://github.com/chpatton013/toolshed@v0.1.0`. Confirmed
+  `env -u TOOLSHED_SOURCE bin/validate --help` resolves the pinned tag over
+  the network with no local checkout.
+
+- **`render update` (D8 item 4).** Checks each dotslash tool's upstream GitHub
+  releases, bumps `version` in `tools.toml`, re-pins, and re-renders, then
+  reports what happened. See `plans/render-update.md`. Opening a PR from the
+  result is a separate, deferred follow-up (below).
 
 ## Follow-up
 
@@ -38,8 +45,14 @@ want its own plan.
   ships `toolshed-validators.tar.gz`; how a downstream manifest author wires it
   into `[validators] paths` is unwritten.
 
-- **`render update`.** Check upstreams for newer releases and open a PR bumping
-  `version` and re-pinning.
+- D8 item 5 (a CI job that re-downloads pinned assets and diffs the lockfile)
+  is substantially done: `ci.yml`'s `verify-pins` job already does this,
+  non-gating. It answers "do the pinned bytes still exist"; `render update`
+  answers "is there a newer version" -- the two stay separate jobs on purpose.
+
+- **A scheduled workflow that runs `render update` and opens bump PRs.**
+  Deferred out of `render update`'s own plan; cadence and PR-batching are
+  decisions for whoever picks this up.
 
 - **Generalize the validator suite further.** The port is faithful to chiiiirrus,
   including validators no file here exercises. Worth a pass once a second

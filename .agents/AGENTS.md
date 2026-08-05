@@ -32,9 +32,12 @@ TOOLSHED_SOURCE=. ./validate    # the file-validation suite
 
 Run `./bin/test` from the repo root. Its `args` hold relative paths.
 
-Two tests skip unless `TOOLSHED_TEST_NETWORK=1` is set. They download release
+Three tests skip unless `TOOLSHED_TEST_NETWORK=1` is set. Two download release
 assets and compare the digests against known-good values, which is what proves
-the pinning code is correct. Run them after touching `toolshed/pin.py`.
+the pinning code is correct; run them after touching `toolshed/pin.py`. The
+third runs `render update` end to end in a `tmp_path` copy of the repo and
+checks the lock digests it writes against a direct `render pin` of the same
+version; run it after touching `toolshed/upstream.py`.
 
 ## Conventions
 
@@ -72,6 +75,11 @@ reintroduce that possibility.
 **Editing `bin/` by hand achieves nothing.** `render` overwrites it and
 `manifest-sync` fails the commit. Change `tools.toml`.
 
+**`render update` rewrites a dotslash tool's `version = "..."` line with a plain
+text search, not a TOML round-trip.** It expects that line inside the tool's own
+`[tool.<name>]` table, as a single line reading `version = "<something>"`. Keep
+it on one line; a version spread across a line continuation would not match.
+
 **A validator that shells out to a new binary** needs that binary added to
 `tools.toml` and the validator listed in `.validator.toml`. A validator with no
 table there never runs.
@@ -86,8 +94,10 @@ render, validate      symlinks into bin/
 toolshed/
   manifest.py         parse and schema-validate tools.toml
   lock.py             read and write tools.lock.toml
-  render.py           emit bin/; the `render` CLI
+  render.py           emit bin/; the `render` CLI, including `update`
   pin.py              download assets and compute digests
+  upstream.py         check a dotslash tool's github releases for a newer version
+  fetch.py            the one urllib call pin.py and upstream.py both use
   templates/          one per rendered method
   validator/          the validation engine and its builtin validators
 validators/           this repo's own validators (manifest-sync, manifest-pinned)

@@ -123,6 +123,23 @@ re-render.
 `render pin` needs network access and decides what bytes every consumer will
 execute. Run it deliberately and read the `tools.lock.toml` diff.
 
+`render update` does the version-bump half of that loop for you, for dotslash
+tools only (a `uv-run` tool's `requirement` specs are floors `uv` resolves at
+run time, so there is no version to check). It checks each named tool's
+upstream GitHub releases (every dotslash tool, if none are named), and for
+each one with a newer release: bumps `version` in `tools.toml`, re-pins, and
+re-renders. It prints a report -- current version, newest available, and
+`current`, `updated`, or `failed: <reason>` -- to stdout, or to a file with
+`--report <path>`. A tool whose failure leaves nothing else to roll back (an
+unsupported source, a network error, an asset that 404s after the bump) is
+left exactly as it was found; the rest of the run continues.
+
+```bash
+./render update              # check and bump every dotslash tool
+./render update shfmt taplo   # just these two
+./render update --report bump-report.txt
+```
+
 ## Why `bin/` is committed
 
 `bin/` is generated and committed, like a lockfile. A consumer can clone and use

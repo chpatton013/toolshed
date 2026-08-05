@@ -7,13 +7,10 @@ the `tools.lock.toml` diff.
 
 import pathlib
 import sys
-import urllib.error
-import urllib.request
 
+from toolshed.fetch import fetch
 from toolshed.lock import PlatformPin, load_lock
 from toolshed.manifest import PLATFORMS, DotslashTool, Manifest, ManifestError
-
-_TIMEOUT_S = 300
 
 
 def digest_bytes(data: bytes) -> str:
@@ -26,21 +23,13 @@ def digest_bytes(data: bytes) -> str:
     return blake3(data).hexdigest()
 
 
-def _fetch(url: str) -> bytes:
-    try:
-        with urllib.request.urlopen(url, timeout=_TIMEOUT_S) as response:
-            return response.read()
-    except (urllib.error.URLError, OSError) as e:
-        raise ManifestError(f"could not fetch {url}: {e}") from e
-
-
 def pin_platform(tool: DotslashTool, platform: str) -> PlatformPin:
     """Download one platform's asset and identify it.
 
     The digest covers the asset exactly as served -- the archive, not the binary
     inside it -- because that is what dotslash verifies before unpacking.
     """
-    data = _fetch(tool.url_for(platform))
+    data = fetch(tool.url_for(platform))
     return PlatformPin(size=len(data), digest=digest_bytes(data))
 
 
