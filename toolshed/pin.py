@@ -2,7 +2,7 @@
 
 This is the one step that needs network and a trusted machine: it decides what
 bytes every consumer will subsequently execute. Run it deliberately and review
-the `tools.lock.toml` diff.
+the `toolshed.lock.toml` diff.
 """
 
 import pathlib

@@ -1,4 +1,4 @@
-"""Parse and schema-validate `tools.toml`.
+"""Parse and schema-validate `toolshed.toml`.
 
 The manifest is the single source of truth for every executable toolshed ships.
 One `[tool.<name>]` table per executable; `method` selects the template that

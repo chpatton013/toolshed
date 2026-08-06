@@ -1,4 +1,4 @@
-"""Assert the committed `bin/` still matches `tools.toml`.
+"""Assert the committed `bin/` still matches `toolshed.toml`.
 
 `bin/` is generated-and-committed, so it can drift: bump a version, forget to
 re-render, and the manifest now describes something the repo does not ship. This
@@ -28,8 +28,8 @@ class ManifestSyncValidator(Validator):
     def _problems(self) -> tuple[str, ...]:
         with self._lock:
             if self.repo_root not in self._cache:
-                manifest = load_manifest(self.repo_root / "tools.toml")
-                lock = load_lock(self.repo_root / "tools.lock.toml")
+                manifest = load_manifest(self.repo_root / "toolshed.toml")
+                lock = load_lock(self.repo_root / "toolshed.lock.toml")
                 self._cache[self.repo_root] = tuple(
                     check_bin(manifest, lock, self.repo_root / "bin")
                 )
@@ -42,7 +42,7 @@ class ManifestSyncValidator(Validator):
                 ok=False,
                 messages=(
                     *problems,
-                    "bin/ is out of sync with tools.toml; run `render`",
+                    "bin/ is out of sync with toolshed.toml; run `render`",
                 ),
             )
         return ValidationResult(ok=True)

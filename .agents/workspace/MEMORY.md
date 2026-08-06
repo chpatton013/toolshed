@@ -6,7 +6,7 @@ repo worth remembering. Used for quick-reference, not as an archive.
 ## Facts
 
 - Every tool in `bin/` that runs Python needs `TOOLSHED_SOURCE=.` until this repo
-  is published, because `tools.toml` pins the `toolshed` package to a `git+https`
+  is published, because `toolshed.toml` pins the `toolshed` package to a `git+https`
   URL that does not resolve yet. The pre-commit hook is installed with the
   variable seeded (`--env TOOLSHED_SOURCE=.`), so plain `git commit` works.
 
@@ -31,5 +31,5 @@ repo worth remembering. Used for quick-reference, not as an archive.
   `TOOLSHED_SOURCE` for `toolshed` itself, `LINT_TRAP_SOURCE` for the validator
   engine (`lint-trap`, extracted per D11). A change to the engine now costs two
   releases to land here -- cut and tag `lint-trap`, then bump the pinned spec in
-  this repo's `tools.toml` -- there is no way to exercise an unreleased engine
+  this repo's `toolshed.toml` -- there is no way to exercise an unreleased engine
   change except by setting `LINT_TRAP_SOURCE` to a local checkout.

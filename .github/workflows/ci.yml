@@ -25,7 +25,7 @@ jobs:
         run: |
           bash scripts/bootstrap/dotslash.sh
           echo "${XDG_BIN_HOME:-$HOME/.local/bin}" >>"$GITHUB_PATH"
-      - name: Check bin/ matches tools.toml
+      - name: Check bin/ matches toolshed.toml
         run: ./render --check
       - name: Validate
         run: ./validate
@@ -43,6 +43,6 @@ jobs:
         uses: astral-sh/setup-uv@v5
       - name: Re-download assets and compare digests
         run: |
-          cp tools.lock.toml /tmp/committed.lock.toml
+          cp toolshed.lock.toml /tmp/committed.lock.toml
           ./render pin
-          diff -u /tmp/committed.lock.toml tools.lock.toml
+          diff -u /tmp/committed.lock.toml toolshed.lock.toml

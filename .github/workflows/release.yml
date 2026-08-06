@@ -24,7 +24,7 @@ jobs:
           echo "${XDG_BIN_HOME:-$HOME/.local/bin}" >>"$GITHUB_PATH"
       # Refuse to publish a bin/ that does not match the manifest, or one with an
       # unpinned tool. `validate` covers the second via manifest-pinned.
-      - name: Check bin/ matches tools.toml
+      - name: Check bin/ matches toolshed.toml
         run: ./render --check
       - name: Validate
         run: ./validate

@@ -1,7 +1,7 @@
 """Check a dotslash tool's upstream GitHub releases for a newer version.
 
 `render update` is the only caller; this module has no knowledge of pinning or
-of `tools.toml` on disk. It answers one question -- "what versions does
+of `toolshed.toml` on disk. It answers one question -- "what versions does
 upstream offer, and which is newest?" -- from the tool's `url` template alone,
 per D5's one-line-bump goal: no `[tool.<name>.update]` schema key is added to
 answer it.
@@ -158,7 +158,7 @@ def rewrite_version(text: str, tool_name: str, version: str) -> str:
     header_re = re.compile(rf"^\[tool\.{re.escape(tool_name)}\]\n", re.MULTILINE)
     header_match = header_re.search(text)
     if header_match is None:
-        raise ManifestError(f"tools.toml: no [tool.{tool_name}] table")
+        raise ManifestError(f"toolshed.toml: no [tool.{tool_name}] table")
 
     section_start = header_match.end()
     next_header = re.search(r"^\[", text[section_start:], re.MULTILINE)
@@ -170,7 +170,7 @@ def rewrite_version(text: str, tool_name: str, version: str) -> str:
     version_re = re.compile(r'^version\s*=\s*"[^"]*"', re.MULTILINE)
     found = version_re.search(section)
     if found is None:
-        raise ManifestError(f"tools.toml: [tool.{tool_name}] has no 'version' key")
+        raise ManifestError(f"toolshed.toml: [tool.{tool_name}] has no 'version' key")
 
     new_line = f'version = "{version}"'
     new_section = section[: found.start()] + new_line + section[found.end() :]

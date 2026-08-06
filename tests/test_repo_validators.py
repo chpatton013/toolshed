@@ -26,7 +26,7 @@ def _checkout(tmp: str) -> pathlib.Path:
     """A minimal copy of this repo: manifest, lock, and rendered bin/."""
     root = pathlib.Path(tmp) / "repo"
     root.mkdir()
-    for name in ("tools.toml", "tools.lock.toml"):
+    for name in ("toolshed.toml", "toolshed.lock.toml"):
         shutil.copy(_REPO / name, root / name)
     shutil.copytree(_REPO / "bin", root / "bin")
     subprocess.run(["git", "init", "-q"], cwd=root, check=True)
@@ -47,14 +47,16 @@ class ManifestPinned(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = _checkout(tmp)
 
-            result = _validator("manifest-pinned", root).check(root / "tools.lock.toml")
+            result = _validator("manifest-pinned", root).check(
+                root / "toolshed.lock.toml"
+            )
 
             self.assertTrue(result.ok, result.messages)
 
     def test_a_removed_digest_is_reported_with_the_tool_and_platform(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = _checkout(tmp)
-            lock = root / "tools.lock.toml"
+            lock = root / "toolshed.lock.toml"
             text = lock.read_text()
             start = text.index('[tool."uv"."linux-x86_64"]')
             end = text.index("[tool.", start + 1)
@@ -70,7 +72,7 @@ class ManifestPinned(unittest.TestCase):
     def test_an_entirely_absent_tool_is_reported(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = _checkout(tmp)
-            lock = root / "tools.lock.toml"
+            lock = root / "toolshed.lock.toml"
             text = lock.read_text()
             keep = [
                 block
@@ -90,14 +92,14 @@ class ManifestSync(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = _checkout(tmp)
 
-            result = _validator("manifest-sync", root).check(root / "tools.toml")
+            result = _validator("manifest-sync", root).check(root / "toolshed.toml")
 
             self.assertTrue(result.ok, result.messages)
 
     def test_a_version_bumped_without_re_rendering_is_reported(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = _checkout(tmp)
-            manifest = root / "tools.toml"
+            manifest = root / "toolshed.toml"
             manifest.write_text(
                 manifest.read_text().replace('version = "1.8.1"', 'version = "1.8.2"')
             )
@@ -113,7 +115,7 @@ class ManifestSync(unittest.TestCase):
             wrapper = root / "bin" / "validate"
             wrapper.write_text(wrapper.read_text() + "# hand edit\n")
 
-            result = _validator("manifest-sync", root).check(root / "tools.toml")
+            result = _validator("manifest-sync", root).check(root / "toolshed.toml")
 
             self.assertFalse(result.ok)
             self.assertIn("validate", " ".join(result.messages))
@@ -123,7 +125,7 @@ class ManifestSync(unittest.TestCase):
             root = _checkout(tmp)
             (root / "bin" / "stowaway").write_text("#!/bin/bash\n")
 
-            result = _validator("manifest-sync", root).check(root / "tools.toml")
+            result = _validator("manifest-sync", root).check(root / "toolshed.toml")
 
             self.assertFalse(result.ok)
             self.assertIn("stowaway", " ".join(result.messages))
@@ -133,7 +135,7 @@ class ManifestSync(unittest.TestCase):
             root = _checkout(tmp)
             before = {p.name: p.read_bytes() for p in (root / "bin").iterdir()}
 
-            _validator("manifest-sync", root).check(root / "tools.toml")
+            _validator("manifest-sync", root).check(root / "toolshed.toml")
 
             after = {p.name: p.read_bytes() for p in (root / "bin").iterdir()}
             self.assertEqual(before, after)

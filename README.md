@@ -3,12 +3,12 @@
 Declare a set of command-line tools once, get a portable `bin/` directory that
 fetches and verifies them on demand.
 
-A single manifest (`tools.toml`) lists every tool. `render` turns it into one
+A single manifest (`toolshed.toml`) lists every tool. `render` turns it into one
 executable per tool in `bin/`. Put that directory on `PATH` and the tools work:
 prebuilt binaries download themselves through [dotslash](https://dotslash-cli.com)
 against a pinned content digest, and Python tools resolve their dependencies
 through `uv` at first run. Nothing is installed ahead of time, and every download
-is checked against a digest recorded in `tools.lock.toml`.
+is checked against a digest recorded in `toolshed.lock.toml`.
 
 The host needs `curl` and the dotslash runtime. Everything else arrives on
 demand.
@@ -108,7 +108,7 @@ Set `entry` for a local script or `package` to run a published package through
 ## Adding a tool
 
 ```bash
-# 1. Add the [tool.<name>] table to tools.toml.
+# 1. Add the [tool.<name>] table to toolshed.toml.
 # 2. Download the assets and record their digests.
 ./render pin <name>
 # 3. Generate bin/<name>.
@@ -121,13 +121,13 @@ Bumping a version is the same, minus step 1's table: change `version`, re-pin,
 re-render.
 
 `render pin` needs network access and decides what bytes every consumer will
-execute. Run it deliberately and read the `tools.lock.toml` diff.
+execute. Run it deliberately and read the `toolshed.lock.toml` diff.
 
 `render update` does the version-bump half of that loop for you, for dotslash
 tools only (a `uv-run` tool's `requirement` specs are floors `uv` resolves at
 run time, so there is no version to check). It checks each named tool's
 upstream GitHub releases (every dotslash tool, if none are named), and for
-each one with a newer release: bumps `version` in `tools.toml`, re-pins, and
+each one with a newer release: bumps `version` in `toolshed.toml`, re-pins, and
 re-renders. It prints a report -- current version, newest available, and
 `current`, `updated`, or `failed: <reason>` -- to stdout, or to a file with
 `--report <path>`. A tool whose failure leaves nothing else to roll back (an
@@ -162,11 +162,11 @@ see [AGENTS.md](AGENTS.md) for why this repo needs that one.
 The engine behind `validate` and `pre-commit` is
 [`lint-trap`](https://github.com/chpatton013/lint-trap), a separate package
 this repo pins like any other dependency (see `[requirements.lint-trap]` in
-`tools.toml`). `.validator.toml` configures that package: it maps each
+`toolshed.toml`). `.validator.toml` configures that package: it maps each
 validator to the files it covers. Two validators are specific to this repo and
 live in `validators/`:
 
-- `manifest-sync` — `bin/` matches `tools.toml`.
+- `manifest-sync` — `bin/` matches `toolshed.toml`.
 - `manifest-pinned` — every dotslash tool has a digest for all four platforms.
 
 Point `[validators] paths` at your own directory to add more. They merge with

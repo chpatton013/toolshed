@@ -17,11 +17,11 @@ built now.
 
 ## D2. Requirements come from the manifest, not from files
 
-**Note:** per-tool specificity is needed; named groups in `tools.toml`; tools
+**Note:** per-tool specificity is needed; named groups in `toolshed.toml`; tools
 take a list of inline `requirement` and a list of referenced `requirements`
 groups; render merges both into the uv invocation.
 
-**Decision.** `tools.toml` grows a `[requirements.<group>]` table with a
+**Decision.** `toolshed.toml` grows a `[requirements.<group>]` table with a
 `packages` list. A `uv-run` tool declares:
 
 - `requirement = ["black", "pathspec>=0.12"]` — inline specs
@@ -105,10 +105,10 @@ rendering its own tools gets the same escape hatch for its own package.
 **Rejected:** `--with-editable` on a path baked into the wrapper (defeats D3);
 publishing a wheel before anything works (chicken/egg with no releases yet).
 
-## D5. Digests live in `tools.lock.toml`
+## D5. Digests live in `toolshed.lock.toml`
 
-Unchanged from the plan: `tools.toml` is hand-edited (versions, URLs),
-`tools.lock.toml` is machine-generated (`size` + blake3 `digest` per platform).
+Unchanged from the plan: `toolshed.toml` is hand-edited (versions, URLs),
+`toolshed.lock.toml` is machine-generated (`size` + blake3 `digest` per platform).
 Keeping them apart keeps a version bump a one-line edit.
 
 Seed data: chiiiirrus's hand-maintained manifests carry verified digests for
@@ -154,7 +154,7 @@ install directory instead.
 | Asset | Contents | Consumer |
 | --- | --- | --- |
 | `toolshed-bin.tar.gz` | `bin/` only | wants the tools on `PATH` (mode 1) |
-| `toolshed-<version>-py3-none-any.whl` | `toolshed` package: renderer + validator engine + builtin validators + templates | renders its own `bin/` from its own `tools.toml`, and reuses the validator engine |
+| `toolshed-<version>-py3-none-any.whl` | `toolshed` package: renderer + validator engine + builtin validators + templates | renders its own `bin/` from its own `toolshed.toml`, and reuses the validator engine |
 | `toolshed-validators.tar.gz` | `validators/` | wants this repo's manifest validators against its own manifest |
 
 The wheel carries the validator *engine* because a consumer who renders their
@@ -165,7 +165,7 @@ would be empty.
 
 No `build-artifacts.yml`. **Note:** this repo should not build releases for
 projects it merely references; the wezterm fork hosts its own releases and
-`tools.toml` just points at them. A `build = ...` key would be dead weight, so
+`toolshed.toml` just points at them. A `build = ...` key would be dead weight, so
 it is omitted.
 
 ## D8. Deferred to follow-ups
@@ -175,7 +175,7 @@ own plan:
 
 1. ~~Extract the validator engine into its own repo, consumed as a pinned
    tool.~~ Done -- see D11.
-2. `render --manifest <path>` against a foreign `tools.toml`, plus the exec
+2. `render --manifest <path>` against a foreign `toolshed.toml`, plus the exec
    wrapper that resolves a tool across federated bin directories.
 3. Publish the validators so downstream manifest authors can reuse them (D7
    ships the artifact; the integration story is unwritten).
@@ -212,7 +212,7 @@ a refactor; D8 item 1 named it as a follow-up. See
 `lint-trap` (`chpatton013/lint-trap`, importable as `lint_trap`), published and
 tagged at `v0.1.0`. This repo deleted its copy and now consumes `lint-trap`
 back exactly the way it already consumed `toolshed` itself (D4): a
-`[requirements.lint-trap]` group in `tools.toml` with
+`[requirements.lint-trap]` group in `toolshed.toml` with
 `override_env = "LINT_TRAP_SOURCE"`. `validators/manifest_sync.py` and
 `validators/manifest_pinned.py` import `lint_trap.base` instead of
 `toolshed.validator.base`; `tests/test_repo_validators.py` now exercises the

@@ -21,7 +21,7 @@ _Nothing currently active._
   the network with no local checkout.
 
 - **`render update` (D8 item 4).** Checks each dotslash tool's upstream GitHub
-  releases, bumps `version` in `tools.toml`, re-pins, and re-renders, then
+  releases, bumps `version` in `toolshed.toml`, re-pins, and re-renders, then
   reports what happened. See `plans/render-update.md`. Opening a PR from the
   result is a separate, deferred follow-up (below).
 

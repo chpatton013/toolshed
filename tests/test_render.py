@@ -498,8 +498,8 @@ class UpdateCommand(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.root = pathlib.Path(self.tmp.name)
-        self.manifest_path = self.root / "tools.toml"
-        self.lock_path = self.root / "tools.lock.toml"
+        self.manifest_path = self.root / "toolshed.toml"
+        self.lock_path = self.root / "toolshed.lock.toml"
         self.bin_dir = self.root / "bin"
 
         self.manifest_path.write_text(

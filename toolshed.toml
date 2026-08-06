@@ -1,6 +1,6 @@
 # The manifest: every executable toolshed ships, and how to bootstrap it.
 #
-# Hand-edited. Digests live in the generated tools.lock.toml, so bumping a tool
+# Hand-edited. Digests live in the generated toolshed.lock.toml, so bumping a tool
 # is a one-line `version` change followed by `render pin <tool> && render`.
 #
 # Tables must stay sorted by name; the `keep-sorted` validator enforces it.

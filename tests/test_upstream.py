@@ -1,6 +1,6 @@
 """Upstream discovery, version ordering, and version-bump write-back.
 
-`Repo` cases are parametrized directly off the committed `tools.toml`, so a
+`Repo` cases are parametrized directly off the committed `toolshed.toml`, so a
 new dotslash tool whose `url` inference breaks fails this suite rather than
 silently shipping an `update` command that can't check it.
 """
@@ -24,7 +24,7 @@ from toolshed.upstream import (
 )
 
 _NETWORK = os.environ.get("TOOLSHED_TEST_NETWORK") == "1"
-_TOOLS_TOML = pathlib.Path(__file__).resolve().parent.parent / "tools.toml"
+_TOOLSHED_TOML = pathlib.Path(__file__).resolve().parent.parent / "toolshed.toml"
 
 # tool name -> (owner, repo, tag_template)
 _EXPECTED_SOURCES = {
@@ -42,7 +42,7 @@ _EXPECTED_SOURCES = {
 
 class SourceDiscoveryAgainstTheRealManifest(unittest.TestCase):
     def setUp(self):
-        self.manifest = load_manifest(_TOOLS_TOML)
+        self.manifest = load_manifest(_TOOLSHED_TOML)
         self.tools = {t.name: t for t in self.manifest.dotslash_tools()}
 
     def test_every_dotslash_tool_in_the_manifest_has_an_expectation(self):
@@ -135,12 +135,12 @@ class RenderUpdateComposesAgainstRealUpstreams(unittest.TestCase):
     def test_updating_shfmt_matches_a_direct_pin_of_the_same_version(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp)
-            manifest_path = root / "tools.toml"
-            lock_path = root / "tools.lock.toml"
+            manifest_path = root / "toolshed.toml"
+            lock_path = root / "toolshed.lock.toml"
             bin_dir = root / "bin"
 
             # Column-zero headers, matching taplo's formatting of the real
-            # tools.toml: rewrite_version's header regex anchors to the start
+            # toolshed.toml: rewrite_version's header regex anchors to the start
             # of the line, so an indented table (as a nested triple-quoted
             # string would otherwise produce) would not match.
             manifest_path.write_text(
@@ -211,7 +211,7 @@ class VersionOrdering(unittest.TestCase):
 
 class VersionWriteBack(unittest.TestCase):
     def setUp(self):
-        self.text = _TOOLS_TOML.read_text()
+        self.text = _TOOLSHED_TOML.read_text()
 
     def test_bumping_shfmt_changes_exactly_one_line(self):
         new_text = rewrite_version(self.text, "shfmt", "9.9.9")

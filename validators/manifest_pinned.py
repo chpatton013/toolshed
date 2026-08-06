@@ -17,8 +17,8 @@ class ManifestPinnedValidator(Validator):
     fixer = False
 
     def check(self, file: pathlib.Path) -> ValidationResult:
-        manifest = load_manifest(self.repo_root / "tools.toml")
-        lock = load_lock(self.repo_root / "tools.lock.toml")
+        manifest = load_manifest(self.repo_root / "toolshed.toml")
+        lock = load_lock(self.repo_root / "toolshed.lock.toml")
 
         messages = [
             f"{tool.name}: unpinned for {', '.join(absent)}"

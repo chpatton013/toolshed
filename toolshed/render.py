@@ -208,7 +208,7 @@ def _check_updates(
 
     Each tool is rewritten, reloaded, and re-pinned on its own: a failure --
     an unsupported source, a network error, an asset that 404s after the bump
-    -- restores that tool's `tools.toml` text and leaves its lockfile entries
+    -- restores that tool's `toolshed.toml` text and leaves its lockfile entries
     as they were, then moves on. One bad tool must not block the rest of the
     run.
     """
@@ -295,7 +295,7 @@ def run_update(
         manifest, manifest_path, lock_path, tool_names, allow_prerelease
     )
 
-    # Reload: tools.toml may hold bumps _check_updates just wrote.
+    # Reload: toolshed.toml may hold bumps _check_updates just wrote.
     manifest = load_manifest(manifest_path)
     lock = load_lock(lock_path)
     write_bin(manifest, lock, bin_dir)
@@ -310,19 +310,19 @@ def run_update(
 
 
 def _paths(root: pathlib.Path) -> tuple[pathlib.Path, pathlib.Path, pathlib.Path]:
-    return root / "tools.toml", root / "tools.lock.toml", root / "bin"
+    return root / "toolshed.toml", root / "toolshed.lock.toml", root / "bin"
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="render",
-        description="Render bin/ from tools.toml.",
+        description="Render bin/ from toolshed.toml.",
     )
     parser.add_argument(
         "--root",
         type=pathlib.Path,
         default=pathlib.Path.cwd(),
-        help="Directory holding tools.toml (default: the working directory).",
+        help="Directory holding toolshed.toml (default: the working directory).",
     )
     parser.add_argument(
         "--check",
@@ -338,7 +338,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     update_parser = subparsers.add_parser(
         "update",
-        help="Check upstream releases, bump versions in tools.toml, and re-pin.",
+        help="Check upstream releases, bump versions in toolshed.toml, and re-pin.",
     )
     update_parser.add_argument(
         "tools", nargs="*", help="Tools to check (default: every dotslash tool)."
@@ -402,7 +402,7 @@ def main(argv: list[str] | None = None) -> int:
                 sys.stderr.write(problem if problem.endswith("\n") else problem + "\n")
             if problems:
                 print(
-                    "render --check: bin/ does not match tools.toml; run `render`",
+                    "render --check: bin/ does not match toolshed.toml; run `render`",
                     file=sys.stderr,
                 )
             return 1 if problems else 0
