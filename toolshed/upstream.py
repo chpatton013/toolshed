@@ -1,6 +1,6 @@
 """Check a dotslash tool's upstream GitHub releases for a newer version.
 
-`render update` is the only caller; this module has no knowledge of pinning or
+`toolshed update` is the only caller; this module has no knowledge of pinning or
 of `toolshed.toml` on disk. It answers one question -- "what versions does
 upstream offer, and which is newest?" -- from the tool's `url` template alone,
 per D5's one-line-bump goal: no `[tool.<name>.update]` schema key is added to

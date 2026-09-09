@@ -47,7 +47,7 @@ class RoundTrip(unittest.TestCase):
                 )
 
     def test_dumping_is_stable_regardless_of_insertion_order(self):
-        """`render pin` must not produce a churning diff."""
+        """`toolshed pin` must not produce a churning diff."""
         forward = Lock(
             {
                 "aaa": {p: PlatformPin(size=1, digest="a") for p in PLATFORMS},

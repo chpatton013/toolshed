@@ -7,7 +7,7 @@ set -euo pipefail
 
 repo="chpatton013/toolshed"
 version="latest"
-asset="toolshed-bin.tar.gz"
+asset=""
 dest="${XDG_DATA_HOME:-$HOME/.local/share}/toolshed"
 install_dotslash=1
 
@@ -22,7 +22,7 @@ Options:
   --repo OWNER/NAME   GitHub repository to install from
                       (default: chpatton013/toolshed)
   --version TAG       Release tag, or `latest` (default: latest)
-  --asset NAME        Release asset to extract (default: toolshed-bin.tar.gz)
+  --asset NAME        Release asset to extract (default: native asset for this OS)
   --dest DIR          Parent install directory; the release lands in DIR/TAG
                       (default: $XDG_DATA_HOME/toolshed, else
                       ~/.local/share/toolshed)
@@ -71,6 +71,24 @@ while [ $# -gt 0 ]; do
     ;;
   esac
 done
+
+if [ -z "$asset" ]; then
+  case "$(uname -s):$(uname -m)" in
+  Linux:x86_64 | Linux:amd64)
+    asset="toolshed-bin-linux-x86_64.tar.gz"
+    ;;
+  Linux:aarch64 | Linux:arm64)
+    asset="toolshed-bin-linux-aarch64.tar.gz"
+    ;;
+  Darwin:*)
+    asset="toolshed-bin.tar.gz"
+    ;;
+  *)
+    echo "No default toolshed asset for $(uname -s)/$(uname -m); use --asset" >&2
+    exit 1
+    ;;
+  esac
+fi
 
 # Resolve `latest` to a concrete tag by following GitHub's redirect, so the
 # install directory is named after a real version rather than a moving target.

@@ -58,7 +58,7 @@ include_files = [
   "**/*.bash",
   "**/*.sh",
   "bin/pre-commit",
-  "bin/render",
+  "bin/toolshed",
   "bin/test",
   "bin/validate",
 ]
@@ -68,7 +68,7 @@ include_files = [
   "**/*.bash",
   "**/*.sh",
   "bin/pre-commit",
-  "bin/render",
+  "bin/toolshed",
   "bin/test",
   "bin/validate",
 ]

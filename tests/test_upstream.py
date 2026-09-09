@@ -11,7 +11,7 @@ import tempfile
 import unittest
 
 from toolshed.lock import load_lock
-from toolshed.manifest import ManifestError, load_manifest
+from toolshed.manifest import DotslashTool, ManifestError, load_manifest
 from toolshed.pin import pin_platform
 from toolshed.render import run_update
 from toolshed.upstream import (
@@ -54,13 +54,14 @@ class SourceDiscoveryAgainstTheRealManifest(unittest.TestCase):
             with self.subTest(tool=name):
                 source = discover_source(self.tools[name])
                 self.assertIsInstance(source, Source)
+                assert isinstance(source, Source)
                 self.assertEqual(owner, source.owner)
                 self.assertEqual(repo, source.repo)
                 self.assertEqual(tag_template, source.tag_template)
 
 
 class UnsupportedSources(unittest.TestCase):
-    def _tool(self, url: str):
+    def _tool(self, url: str) -> DotslashTool:
         text = f"""
         [tool.thing]
         method = "dotslash"
@@ -72,7 +73,9 @@ class UnsupportedSources(unittest.TestCase):
         linux-aarch64 = {{ asset = "a" }}
         linux-x86_64 = {{ asset = "a" }}
         """
-        return load_manifest_text(text).tools["thing"]
+        tool = load_manifest_text(text).tools["thing"]
+        assert isinstance(tool, DotslashTool)
+        return tool
 
     def test_a_non_github_url_reports_rather_than_raises(self):
         source = discover_source(self._tool(r"https://example.invalid/thing-{version}"))
@@ -127,7 +130,7 @@ class RenderUpdateComposesAgainstRealUpstreams(unittest.TestCase):
     """The one test that proves discovery, write-back, and pinning compose.
 
     A copy of the repo under `tmp_path`, deliberately holding an old shfmt
-    release, so `render update` is guaranteed to find something newer. The
+    release, so `toolshed update` is guaranteed to find something newer. The
     lock digests it writes are then checked against a direct `pin_platform`
     call for that same (now-known) version -- the two paths must agree.
     """
@@ -171,6 +174,7 @@ class RenderUpdateComposesAgainstRealUpstreams(unittest.TestCase):
 
             updated_manifest = load_manifest(manifest_path)
             bumped = updated_manifest.tools["shfmt"]
+            assert isinstance(bumped, DotslashTool)
             self.assertNotEqual("3.9.0", bumped.version)
 
             lock = load_lock(lock_path)
@@ -183,6 +187,7 @@ class RenderUpdateComposesAgainstRealUpstreams(unittest.TestCase):
                 direct = pin_platform(bumped, platform)
                 written = lock.get("shfmt", platform)
                 self.assertIsNotNone(written)
+                assert written is not None
                 self.assertEqual(direct.digest, written.digest)
                 self.assertEqual(direct.size, written.size)
 
@@ -229,15 +234,19 @@ class VersionWriteBack(unittest.TestCase):
         new_text = rewrite_version(self.text, "shfmt", "9.9.9")
 
         manifest = load_manifest_text(new_text)
+        tool = manifest.tools["shfmt"]
+        assert isinstance(tool, DotslashTool)
 
-        self.assertEqual("9.9.9", manifest.tools["shfmt"].version)
+        self.assertEqual("9.9.9", tool.version)
 
     def test_bumping_biome_does_not_touch_bun(self):
         new_text = rewrite_version(self.text, "biome", "9.9.9")
 
         manifest = load_manifest_text(new_text)
+        tool = manifest.tools["bun"]
+        assert isinstance(tool, DotslashTool)
 
-        self.assertEqual("1.3.12", manifest.tools["bun"].version)
+        self.assertEqual("1.3.12", tool.version)
 
     def test_an_absent_tool_raises(self):
         with self.assertRaises(ManifestError):

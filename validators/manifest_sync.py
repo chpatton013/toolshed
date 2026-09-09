@@ -11,7 +11,10 @@ import threading
 
 from toolshed.lock import load_lock
 from toolshed.render import check_bin
-from lint_trap.base import ValidationResult, Validator
+from lint_trap.base import (  # pyright: ignore[reportMissingImports]
+    ValidationResult,
+    Validator,
+)
 from toolshed.manifest import load_manifest
 
 
@@ -42,7 +45,7 @@ class ManifestSyncValidator(Validator):
                 ok=False,
                 messages=(
                     *problems,
-                    "bin/ is out of sync with toolshed.toml; run `render`",
+                    "bin/ is out of sync with toolshed.toml; run `toolshed render`",
                 ),
             )
         return ValidationResult(ok=True)

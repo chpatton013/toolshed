@@ -13,7 +13,7 @@ authors = [{ name = "chpatton013" }]
 dependencies = ["jinja2>=3.1"]
 
 [project.optional-dependencies]
-# `render pin` hashes downloaded assets; blake3 ships a native extension, so it
+# `toolshed pin` hashes downloaded assets; blake3 ships a native extension, so it
 # stays out of the base install for consumers who only render.
 pin = ["blake3>=1.0"]
 

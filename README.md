@@ -5,8 +5,7 @@
 Declare a set of command-line tools once, get a portable `bin/` directory that
 fetches and verifies them on demand.
 
-A single manifest (`toolshed.toml`) lists every tool. `render` turns it into one
-executable per tool in `bin/`. Put that directory on `PATH` and the tools work:
+A single manifest (`toolshed.toml`) lists every tool. `toolshed render` turns it into one executable per tool in `bin/`. Put that directory on `PATH` and the tools work:
 prebuilt binaries download themselves through [dotslash](https://dotslash-cli.com)
 against a pinned content digest, and Python tools resolve their dependencies
 through `uv` at first run. Nothing is installed ahead of time, and every download
@@ -23,7 +22,10 @@ demand.
 export PATH="$(bash install.sh):$PATH"
 ```
 
-`install.sh` takes `--repo`, `--version`, `--asset`, and `--dest`, so it also
+`install.sh` takes `--repo`, `--version`, `--asset`, and `--dest`. Without
+`--asset`, Linux selects `toolshed-bin-linux-x86_64.tar.gz` or
+`toolshed-bin-linux-aarch64.tar.gz` from `uname`; macOS uses
+`toolshed-bin.tar.gz`. It also
 installs releases published by anyone else using toolshed. Run
 `bash install.sh --help` for the details.
 
@@ -36,7 +38,9 @@ from a checkout.
 
 | Asset | Contents | Use it when |
 | --- | --- | --- |
-| `toolshed-bin.tar.gz` | `bin/` | You want the tools on `PATH`. |
+| `toolshed-bin.tar.gz` | `bin/` | You want the tools on `PATH` on macOS or a universal archive. |
+| `toolshed-bin-linux-x86_64.tar.gz` | `bin/` | Linux x86_64. |
+| `toolshed-bin-linux-aarch64.tar.gz` | `bin/` | Linux arm64/aarch64. |
 | `toolshed-<version>-py3-none-any.whl` | The renderer | You want to render your own `bin/` from your own manifest. |
 | `toolshed-validators.tar.gz` | `validators/` | You want this repo's manifest checks against your own manifest. |
 | `SHA256SUMS` | Checksums for the above | Always. `install.sh` verifies against it. |
@@ -44,7 +48,7 @@ from a checkout.
 ## Tools
 
 `bin/` currently ships `biome`, `bun`, `gitleaks`, `jq`, `shellcheck`, `shfmt`,
-`taplo`, `uv`, and `yamlfmt` as pinned binaries, plus `render`, `validate`,
+`taplo`, `uv`, and `yamlfmt` as pinned binaries, plus `toolshed`, `validate`,
 `pre-commit`, and `test` as Python entry points.
 
 ## The manifest
@@ -105,27 +109,28 @@ Set `entry` for a local script or `package` to run a published package through
 
 ### `passthrough` — hand-written
 
-`render` leaves the file alone but still checks that it exists and is executable.
+`toolshed render` leaves the file alone but still checks that it exists and is
+executable.
 
 ## Adding a tool
 
 ```bash
 # 1. Add the [tool.<name>] table to toolshed.toml.
 # 2. Download the assets and record their digests.
-./render pin <name>
+toolshed pin <name>
 # 3. Generate bin/<name>.
-./render
+toolshed render
 # 4. Confirm the tree is consistent.
-./validate
+./bin/validate
 ```
 
 Bumping a version is the same, minus step 1's table: change `version`, re-pin,
 re-render.
 
-`render pin` needs network access and decides what bytes every consumer will
+`toolshed pin` needs network access and decides what bytes every consumer will
 execute. Run it deliberately and read the `toolshed.lock.toml` diff.
 
-`render update` does the version-bump half of that loop for you, for dotslash
+`toolshed update` does the version-bump half of that loop for you, for dotslash
 tools only (a `uv-run` tool's `requirement` specs are floors `uv` resolves at
 run time, so there is no version to check). It checks each named tool's
 upstream GitHub releases (every dotslash tool, if none are named), and for
@@ -137,10 +142,20 @@ unsupported source, a network error, an asset that 404s after the bump) is
 left exactly as it was found; the rest of the run continues.
 
 ```bash
-./render update              # check and bump every dotslash tool
-./render update shfmt taplo   # just these two
-./render update --report bump-report.txt
+toolshed update              # check and bump every dotslash tool
+toolshed update shfmt taplo   # just these two
+toolshed update --report bump-report.txt
 ```
+
+The old `render` executable is no longer shipped. Replace `./render` with
+`toolshed render`; use `toolshed pin` and `toolshed update` for their respective
+operations. The self-reference in `toolshed.toml` must always be a full commit
+SHA, never a moving tag. During development, the checked-in pin may still point
+at the previous release while `TOOLSHED_SOURCE=.` exercises the candidate.
+Do not publish those candidate artifacts as final releases: publish the
+candidate commit first, update the self-reference to that published commit,
+run `toolshed render` and the checks again from outside the checkout, then
+publish the final release containing the immutable repin.
 
 ## Why `bin/` is committed
 

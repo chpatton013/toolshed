@@ -9,7 +9,10 @@ import pathlib
 
 from toolshed.lock import load_lock
 from toolshed.manifest import load_manifest
-from lint_trap.base import ValidationResult, Validator
+from lint_trap.base import (  # pyright: ignore[reportMissingImports]
+    ValidationResult,
+    Validator,
+)
 
 
 class ManifestPinnedValidator(Validator):
@@ -28,6 +31,6 @@ class ManifestPinnedValidator(Validator):
         if messages:
             return ValidationResult(
                 ok=False,
-                messages=(*messages, "run `render pin` to fill the lockfile"),
+                messages=(*messages, "run `toolshed pin` to fill the lockfile"),
             )
         return ValidationResult(ok=True)

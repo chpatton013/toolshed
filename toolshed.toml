@@ -1,7 +1,7 @@
 # The manifest: every executable toolshed ships, and how to bootstrap it.
 #
 # Hand-edited. Digests live in the generated toolshed.lock.toml, so bumping a tool
-# is a one-line `version` change followed by `render pin <tool> && render`.
+# is a one-line `version` change followed by `toolshed pin <tool> && toolshed render`.
 #
 # Tables must stay sorted by name; the `keep-sorted` validator enforces it.
 
@@ -23,10 +23,13 @@ override_env = "LINT_TRAP_SOURCE"
 packages = ["black", "pyupgrade", "yamllint"]
 
 # toolshed's own code. Overridable so a checkout can exercise its working tree:
-# `TOOLSHED_SOURCE=. ./validate`. Released wrappers with the variable unset
-# resolve the pinned spec instead.
+# `TOOLSHED_SOURCE=. ./bin/validate`. Released wrappers with the variable unset
+# resolve the pinned spec instead. A candidate keeps the previous release pin
+# until its commit is published; repin and render in the follow-up release.
 [requirements.toolshed]
-packages = ["toolshed @ git+https://github.com/chpatton013/toolshed@v0.1.0"]
+packages = [
+  "toolshed @ git+https://github.com/chpatton013/toolshed@e8f07af36e8ac9149bf8b9a54c166b1d957d3e35",
+]
 override_env = "TOOLSHED_SOURCE"
 
 # ---- tools, sorted by name -------------------------------------------------
@@ -89,13 +92,6 @@ method = "uv-run"
 module = "lint_trap.precommit"
 requirements = ["python-validators", "lint-trap", "toolshed"]
 
-[tool.render]
-method = "uv-run"
-module = "toolshed.render"
-# `render pin` hashes downloaded assets; the rest of render does not need it.
-requirement = ["blake3>=1.0"]
-requirements = ["toolshed"]
-
 [tool.shellcheck]
 method = "dotslash"
 version = "0.11.0"
@@ -141,6 +137,13 @@ args = ["discover", "-s", "tests", "-t", "."]
 # The suite covers pinning, which needs the hash implementation.
 requirement = ["blake3>=1.0"]
 requirements = ["python-validators", "lint-trap", "toolshed"]
+
+[tool.toolshed]
+method = "uv-run"
+module = "toolshed.render"
+# `toolshed pin` hashes downloaded assets; the rest of toolshed does not need it.
+requirement = ["blake3>=1.0"]
+requirements = ["toolshed"]
 
 [tool.uv]
 method = "dotslash"

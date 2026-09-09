@@ -442,18 +442,28 @@ class TwoOverrideGroupsRendering(unittest.TestCase):
 
 
 class Cli(unittest.TestCase):
-    def test_check_combined_with_pin_is_rejected(self):
-        """Otherwise `render --check pin` would silently pin and report nothing."""
+    def test_render_is_an_explicit_subcommand(self):
+        from toolshed.render import main
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            (root / "toolshed.toml").write_text("\n")
+            self.assertEqual(0, main(["render", "--root", str(root)]))
+            self.assertTrue((root / "bin").is_dir())
+
+    def test_bare_invocation_is_rejected(self):
         from toolshed.render import main
 
         with self.assertRaises(SystemExit):
-            main(["--check", "pin"])
+            main([])
 
-    def test_check_combined_with_update_is_rejected(self):
+    def test_check_is_not_available_on_pin_or_update(self):
         from toolshed.render import main
 
         with self.assertRaises(SystemExit):
-            main(["--check", "update"])
+            main(["pin", "--check"])
+        with self.assertRaises(SystemExit):
+            main(["update", "--check"])
 
 
 # One line per tool, "$NAME" and "$VERSION" swapped in, so the URL's brace
@@ -486,7 +496,7 @@ def _tool_toml(name: str, version: str) -> str:
 
 
 class UpdateCommand(unittest.TestCase):
-    """`render update`, with upstream discovery and asset fetches stubbed out.
+    """`toolshed update`, with upstream discovery and asset fetches stubbed out.
 
     `discover_source` stays real -- it is pure URL parsing, no network -- so
     this also exercises T1's inference against the URL shapes above. Only the
@@ -561,6 +571,7 @@ class UpdateCommand(unittest.TestCase):
         for platform in _UPDATE_PLATFORMS:
             pin = lock.get("alpha", platform)
             self.assertIsNotNone(pin)
+            assert pin is not None
             # setUp seeded every pin's digest as a zero-padded index; a real
             # re-pin replaces it with the (fake) asset's own digest.
             self.assertNotEqual(f"{_UPDATE_PLATFORMS.index(platform):064x}", pin.digest)
@@ -593,6 +604,7 @@ class UpdateCommand(unittest.TestCase):
         for platform in _UPDATE_PLATFORMS:
             pin = old_lock_text.get("gamma", platform)
             self.assertIsNotNone(pin)
+            assert pin is not None
             self.assertEqual(f"{_UPDATE_PLATFORMS.index(platform):064x}", pin.digest)
 
         self.assertEqual(1, status)  # a failure makes the run report non-zero

@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -26,7 +26,7 @@ jobs:
           bash scripts/bootstrap/dotslash.sh
           echo "${XDG_BIN_HOME:-$HOME/.local/bin}" >>"$GITHUB_PATH"
       - name: Check bin/ matches toolshed.toml
-        run: ./render --check
+        run: ./bin/toolshed render --check
       - name: Validate
         run: ./validate
       - name: Test
@@ -44,5 +44,5 @@ jobs:
       - name: Re-download assets and compare digests
         run: |
           cp toolshed.lock.toml /tmp/committed.lock.toml
-          ./render pin
+          ./bin/toolshed pin
           diff -u /tmp/committed.lock.toml toolshed.lock.toml

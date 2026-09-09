@@ -2,7 +2,7 @@
 
 `bin/` is generated-and-committed, like a lockfile: a consumer can clone and put
 it on PATH with no render step, and a reviewer sees the diff a version bump
-causes. `render --check` is what keeps the two honest.
+causes. `toolshed render --check` is what keeps the two honest.
 
 Rendered files carry no path arithmetic, so any one of them can be copied
 anywhere and still work. That is what lets a consumer take some tools from a
@@ -68,7 +68,7 @@ def _render_dotslash(tool: DotslashTool, lock: Lock) -> str:
     if absent:
         raise RenderError(
             f"tool '{tool.name}' is unpinned for {', '.join(absent)}; "
-            f"run `render pin {tool.name}`"
+            f"run `toolshed pin {tool.name}`"
         )
 
     platforms: dict[str, dict[str, object]] = {}
@@ -189,7 +189,7 @@ def check_bin(manifest: Manifest, lock: Lock, bin_dir: pathlib.Path) -> list[str
 
 @dataclass(frozen=True)
 class UpdateResult:
-    """One tool's outcome from a `render update` run."""
+    """One tool's outcome from a `toolshed update` run."""
 
     name: str
     current: str
@@ -315,8 +315,8 @@ def _paths(root: pathlib.Path) -> tuple[pathlib.Path, pathlib.Path, pathlib.Path
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="render",
-        description="Render bin/ from toolshed.toml.",
+        prog="toolshed",
+        description="Manage toolshed tools and rendered executables.",
     )
     parser.add_argument(
         "--root",
@@ -324,18 +324,31 @@ def main(argv: list[str] | None = None) -> int:
         default=pathlib.Path.cwd(),
         help="Directory holding toolshed.toml (default: the working directory).",
     )
-    parser.add_argument(
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    render_parser = subparsers.add_parser(
+        "render", help="Render bin/ from toolshed.toml."
+    )
+    render_parser.add_argument(
         "--check",
         action="store_true",
         help="Report drift between the committed bin/ and the manifest; write nothing.",
     )
-    subparsers = parser.add_subparsers(dest="command")
+
     pin_parser = subparsers.add_parser(
         "pin", help="Download assets and record their size and digest."
     )
     pin_parser.add_argument(
         "tools", nargs="*", help="Tools to pin (default: every dotslash tool)."
     )
+    for command_parser in (render_parser, pin_parser):
+        command_parser.add_argument(
+            "--root",
+            type=pathlib.Path,
+            default=argparse.SUPPRESS,
+            help="Directory holding toolshed.toml.",
+        )
+
     update_parser = subparsers.add_parser(
         "update",
         help="Check upstream releases, bump versions in toolshed.toml, and re-pin.",
@@ -356,30 +369,31 @@ def main(argv: list[str] | None = None) -> int:
         type=pathlib.Path,
         help="Write the report here instead of stdout.",
     )
+    update_parser.add_argument(
+        "--root",
+        type=pathlib.Path,
+        default=argparse.SUPPRESS,
+        help="Directory holding toolshed.toml.",
+    )
     args = parser.parse_args(argv)
 
     manifest_path, lock_path, bin_dir = _paths(args.root)
     try:
         manifest = load_manifest(manifest_path)
     except (ManifestError, OSError) as e:
-        print(f"render: {e}", file=sys.stderr)
+        print(f"toolshed: {e}", file=sys.stderr)
         return 1
 
     if args.command == "pin":
-        if args.check:
-            parser.error("--check cannot be combined with pin")
         from toolshed.pin import pin_tools
 
         try:
             return pin_tools(manifest, lock_path, args.tools)
         except (ManifestError, RenderError) as e:
-            print(f"render pin: {e}", file=sys.stderr)
+            print(f"toolshed pin: {e}", file=sys.stderr)
             return 1
 
     if args.command == "update":
-        if args.check:
-            parser.error("--check cannot be combined with update")
-
         try:
             return run_update(
                 manifest_path,
@@ -391,7 +405,7 @@ def main(argv: list[str] | None = None) -> int:
                 report_path=args.report,
             )
         except (ManifestError, RenderError, OSError) as e:
-            print(f"render update: {e}", file=sys.stderr)
+            print(f"toolshed update: {e}", file=sys.stderr)
             return 1
 
     try:
@@ -402,7 +416,8 @@ def main(argv: list[str] | None = None) -> int:
                 sys.stderr.write(problem if problem.endswith("\n") else problem + "\n")
             if problems:
                 print(
-                    "render --check: bin/ does not match toolshed.toml; run `render`",
+                    "toolshed render --check: bin/ does not match toolshed.toml; "
+                    "run `toolshed render`",
                     file=sys.stderr,
                 )
             return 1 if problems else 0
@@ -410,7 +425,7 @@ def main(argv: list[str] | None = None) -> int:
         for name in write_bin(manifest, lock, bin_dir):
             print(f"rendered {name}")
     except (ManifestError, RenderError, OSError) as e:
-        print(f"render: {e}", file=sys.stderr)
+        print(f"toolshed render: {e}", file=sys.stderr)
         return 1
 
     return 0

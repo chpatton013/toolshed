@@ -7,7 +7,7 @@ Agent-owned task list. New items arrive via
 
 ## Active
 
-_Nothing currently active._
+- [ ] [2026-09-09-z8k3] Coordinate the upstream Toolshed release required before Fleet can enable its role: rename the `render` executable to `toolshed`; move the current default action under the explicit `toolshed render` subparser/CLI shape; publish and pin an immutable release; and provide verified Linux x86_64 and arm64/aarch64 architecture-specific release artifacts/packages. Acceptance criteria: released CLI and install artifacts expose the Fleet-required `toolshed render` command and architecture behavior; compatibility or migration expectations are documented; tests cover the CLI shape and platform artifact/package selection; and release/install documentation identifies the pinned version and supported architectures. (**Complexity:** High. **Readiness:** Ready)
 
 ## Completed
 
