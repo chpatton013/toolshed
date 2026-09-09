@@ -50,6 +50,13 @@ version; run it after touching `toolshed/upstream.py`.
 
 ## Conventions
 
+- Shared agent context (instructions, house rules, prompts, skills) lives in
+  `AGENTS.md` and `.agents/skills/`, never duplicated into a harness-specific
+  directory (`.claude/`, `.cursor/`, `.github/`, `.opencode/`, `.pi/`, etc.) —
+  those hold only symlinks back into `.agents/` or minimal import shims. Load
+  the `agent-context` skill before creating, editing, or relocating any
+  agent-facing instruction, rule, prompt, or config file.
+
 **Shell.** `#!/bin/bash --norc` and `set -euo pipefail`. Accumulate command
 arguments into an array seeded with fixed elements, never an empty one: macOS
 ships bash 3.2, where expanding an empty array under `set -u` is an error.
@@ -126,7 +133,10 @@ install.sh            consumer-side installer
 `.agents/workspace/` holds material that supports development without belonging
 to the project itself:
 
-- `TODO.md` — the task list. `INBOX.md` is where new items arrive.
+- `followup/tasks.md` — the task list, and `followup/inbox.md` where new items
+  arrive. Managed via the `followup` skill (`/followup add:`/`triage:`/`next:`)
+  rather than edited directly, though direct edits are always fine too.
+- `MEMORY.md` — durable facts about developing in this repo worth remembering.
 - `design/toolshed-design-decisions.md` — why the design is shaped the way it is.
   Read it before changing the manifest schema or the wrapper preamble. Most of its
   decisions exist to satisfy a constraint that is not obvious from the code.

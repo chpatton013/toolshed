@@ -1,5 +1,7 @@
 # toolshed
 
+[![ci](https://github.com/chpatton013/toolshed/actions/workflows/ci.yml/badge.svg)](https://github.com/chpatton013/toolshed/actions/workflows/ci.yml)
+
 Declare a set of command-line tools once, get a portable `bin/` directory that
 fetches and verifies them on demand.
 
@@ -187,3 +189,16 @@ Validators that shell out to a pinned binary follow a contract `lint-trap`
 implements: check `$LINT_TRAP_BIN_DIR`, then the repo's own `bin/`, then
 `PATH`. A repo pins tools so every checkout formats code the same way, so
 those pins win over a different version already on `PATH`.
+
+## License
+
+`toolshed` is licensed under the terms of the MIT License, as described in
+[LICENSE.md](LICENSE.md).
+
+## Contributing
+
+Contributions are welcome in the form of bug reports, feature requests, or pull
+requests.
+
+Contribution to `toolshed` is organized under the terms of the [Contributor
+Covenant](CONTRIBUTOR_COVENANT.md).

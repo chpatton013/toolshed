@@ -1,7 +1,45 @@
-__pycache__/
+# Editor state
+*.sw[a-p]
+.*.un~
+.netrwhist
+Session.vim
+Sessionx.vim
+tags
+!tags/
+*~
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+.history/
+
+# OS file explorer leftovers
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+
+# Python
 *.py[cod]
+*.egg-info/
+*$py.class
+__pycache__/
+.mypy_cache/
+.pytest_cache/
 .ruff_cache/
 .venv/
+venv/
 build/
 dist/
-*.egg-info/
+
+# C / C++
+cmake-build-*/
+*.o
+*.so

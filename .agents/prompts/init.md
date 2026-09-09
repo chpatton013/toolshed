@@ -3,9 +3,10 @@
 Hello coding agent!
 
 You find yourself in a new workspace with the task of implementing the project
-`toolshed` as described in `.agents/workspace/plans/bin-distribution-separate-repo.md`.
-That plan was specified by another agent within a different repository until it
-became apparent that its scope warranted its own repository.
+`toolshed` as described by the design decisions and implementation plans in
+`.agents/workspace/design/` and `.agents/workspace/plans/`. Those plans were
+specified by another agent within a different repository until it became
+apparent that their scope warranted its own repository.
 
 That other agent was working in my dotfiles repo, which you can find at
 `~/github/chpatton013/dotfiles2` for reference. The plan contains several
