@@ -28,7 +28,7 @@ packages = ["black", "pyupgrade", "yamllint"]
 # until its commit is published; repin and render in the follow-up release.
 [requirements.toolshed]
 packages = [
-  "toolshed @ git+https://github.com/chpatton013/toolshed@e8f07af36e8ac9149bf8b9a54c166b1d957d3e35",
+  "toolshed @ git+https://github.com/chpatton013/toolshed@373101d86b46883ed9aab833ef1aced35baafd94",
 ]
 override_env = "TOOLSHED_SOURCE"
 

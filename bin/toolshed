@@ -21,7 +21,7 @@ uv_args+=(--with "blake3>=1.0")
 if [ -n "${TOOLSHED_SOURCE:-}" ]; then
   uv_args+=(--with "$TOOLSHED_SOURCE")
 else
-  uv_args+=(--with "toolshed @ git+https://github.com/chpatton013/toolshed@e8f07af36e8ac9149bf8b9a54c166b1d957d3e35")
+  uv_args+=(--with "toolshed @ git+https://github.com/chpatton013/toolshed@373101d86b46883ed9aab833ef1aced35baafd94")
 fi
 
 exec "$uv" "${uv_args[@]}" python -m toolshed.render "$@"
