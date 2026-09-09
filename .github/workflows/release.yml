@@ -31,23 +31,18 @@ jobs:
       - name: Test
         run: ./bin/test
       # The bin/ wrappers are architecture-neutral: dotslash selects the
-      # platform-specific binary from each manifest at runtime. Keep separate
-      # Linux-labelled archives so installers and Fleet can select explicitly;
-      # these archives are not native builds of the Python renderer.
+      # platform-specific binary from each manifest at runtime. One archive
+      # suffices for all platforms.
       - name: Build release assets
         run: |
           mkdir -p dist
           tar czf dist/toolshed-bin.tar.gz bin
-          tar czf dist/toolshed-bin-linux-x86_64.tar.gz bin
-          tar czf dist/toolshed-bin-linux-aarch64.tar.gz bin
           tar czf dist/toolshed-validators.tar.gz validators
           uv build --wheel --out-dir dist
           # Listed by name, not by glob: the glob would have to exclude the sums
           # file it is creating, and install.sh looks entries up by bare name.
           cd dist
           sha256sum toolshed-bin.tar.gz \
-            toolshed-bin-linux-x86_64.tar.gz \
-            toolshed-bin-linux-aarch64.tar.gz \
             toolshed-validators.tar.gz ./*.whl \
             | sed 's| \./| |' >SHA256SUMS
           cat SHA256SUMS

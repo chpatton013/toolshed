@@ -73,21 +73,7 @@ while [ $# -gt 0 ]; do
 done
 
 if [ -z "$asset" ]; then
-  case "$(uname -s):$(uname -m)" in
-  Linux:x86_64 | Linux:amd64)
-    asset="toolshed-bin-linux-x86_64.tar.gz"
-    ;;
-  Linux:aarch64 | Linux:arm64)
-    asset="toolshed-bin-linux-aarch64.tar.gz"
-    ;;
-  Darwin:*)
-    asset="toolshed-bin.tar.gz"
-    ;;
-  *)
-    echo "No default toolshed asset for $(uname -s)/$(uname -m); use --asset" >&2
-    exit 1
-    ;;
-  esac
+  asset="toolshed-bin.tar.gz"
 fi
 
 # Resolve `latest` to a concrete tag by following GitHub's redirect, so the

@@ -12,40 +12,20 @@ _ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 
 class ReleaseArtifacts(unittest.TestCase):
-    def test_release_workflow_publishes_linux_architecture_assets(self):
+    def test_release_workflow_publishes_universal_bin_archive(self):
         workflow = (_ROOT / ".github/workflows/release.yml").read_text()
 
-        for asset in (
-            "toolshed-bin-linux-x86_64.tar.gz",
-            "toolshed-bin-linux-aarch64.tar.gz",
-        ):
-            self.assertIn(asset, workflow)
-            self.assertIn(asset, (_ROOT / "install.sh").read_text())
+        self.assertIn("toolshed-bin.tar.gz", workflow)
+        self.assertNotIn("toolshed-bin-linux-", workflow)
 
-    def test_linux_assets_are_explicit_labels_for_neutral_wrappers(self):
-        workflow = (_ROOT / ".github/workflows/release.yml").read_text()
-
-        self.assertIn("architecture-neutral", workflow)
-        self.assertEqual(
-            2,
-            workflow.count("tar czf dist/toolshed-bin-linux-"),
-        )
-
-    def test_ci_runs_the_linux_architecture_matrix(self):
-        workflow = (_ROOT / ".github/workflows/ci.yml").read_text()
-
-        self.assertIn("ubuntu-latest", workflow)
-        self.assertIn("ubuntu-24.04-arm", workflow)
-
-    def test_installer_maps_supported_linux_architectures(self):
+    def test_installer_uses_universal_asset(self):
         installer = (_ROOT / "install.sh").read_text()
 
-        self.assertIn("Linux:x86_64 | Linux:amd64", installer)
-        self.assertIn("Linux:aarch64 | Linux:arm64", installer)
-        self.assertIn('asset="toolshed-bin-linux-x86_64.tar.gz"', installer)
-        self.assertIn('asset="toolshed-bin-linux-aarch64.tar.gz"', installer)
+        self.assertIn("toolshed-bin.tar.gz", installer)
+        self.assertNotIn("Linux:x86_64", installer)
+        self.assertNotIn("Linux:aarch64", installer)
 
-    def test_installer_verifies_the_selected_asset_checksum(self):
+    def test_installer_verifies_the_asset_checksum(self):
         installer = (_ROOT / "install.sh").read_text()
 
         self.assertIn('curl -fsSL "$base/$asset"', installer)

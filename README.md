@@ -23,9 +23,7 @@ export PATH="$(bash install.sh):$PATH"
 ```
 
 `install.sh` takes `--repo`, `--version`, `--asset`, and `--dest`. Without
-`--asset`, Linux selects `toolshed-bin-linux-x86_64.tar.gz` or
-`toolshed-bin-linux-aarch64.tar.gz` from `uname`; macOS uses
-`toolshed-bin.tar.gz`. It also
+`--asset` it downloads `toolshed-bin.tar.gz`. It also
 installs releases published by anyone else using toolshed. Run
 `bash install.sh --help` for the details.
 
@@ -38,9 +36,7 @@ from a checkout.
 
 | Asset | Contents | Use it when |
 | --- | --- | --- |
-| `toolshed-bin.tar.gz` | `bin/` | You want the tools on `PATH` on macOS or a universal archive. |
-| `toolshed-bin-linux-x86_64.tar.gz` | `bin/` | Linux x86_64. |
-| `toolshed-bin-linux-aarch64.tar.gz` | `bin/` | Linux arm64/aarch64. |
+| `toolshed-bin.tar.gz` | `bin/` | You want the tools on `PATH`. |
 | `toolshed-<version>-py3-none-any.whl` | The renderer | You want to render your own `bin/` from your own manifest. |
 | `toolshed-validators.tar.gz` | `validators/` | You want this repo's manifest checks against your own manifest. |
 | `SHA256SUMS` | Checksums for the above | Always. `install.sh` verifies against it. |
