@@ -3,11 +3,11 @@
 #
 # Usage: bash scripts/release.sh <version>
 #
-# Updates the version in pyproject.toml to <version>, commits it on the
-# current branch, tags the commit <version>, and pushes both. The push of
-# the tag triggers .github/workflows/release.yml, which builds and publishes
-# the GitHub release. The tag name and the wheel filename therefore always
-# agree, because both come from the same version string.
+# Updates the version in pyproject.toml and the toolshed self-pin to
+# <version>, commits them on the current branch, tags the commit v<version>,
+# and pushes both. The push of the tag triggers .github/workflows/release.yml,
+# which builds and publishes the GitHub release. The tag, wheel filename, and
+# self-pin therefore always agree, because all come from the same version.
 #
 # Prerequisites: a clean working tree (changes here are hard to untangle),
 # git and gh available, and push access to the remote.
@@ -55,12 +55,20 @@ if [ "$current" = "$version" ]; then
   exit 1
 fi
 
-# Plain text rewrite, matching toolshed/upstream.py's version handling: a
-# TOML round-trip would discard the file's taplo formatting.
+# Plain text rewrites preserve taplo formatting rather than round-tripping TOML.
 sed -i.bak "s/^version = \"$current\"/version = \"$version\"/" "$manifest"
 rm -f "$manifest.bak"
 
-git add "$manifest"
+manifest_toml="$repo_root/toolshed.toml"
+sed -i.bak -E "s#(toolshed @ git\\+https://github.com/chpatton013/toolshed@).*#\\1$tag#" "$manifest_toml"
+rm -f "$manifest_toml.bak"
+
+if ! grep -q "toolshed @ git+https://github.com/chpatton013/toolshed@$tag\"" "$manifest_toml"; then
+  echo "Could not update the toolshed self-pin to $tag" >&2
+  exit 1
+fi
+
+git add "$manifest" "$manifest_toml"
 git commit -m "release: bump version to $version"
 git tag -a "$tag" -m "$tag"
 

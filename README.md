@@ -145,13 +145,9 @@ toolshed update --report bump-report.txt
 
 The old `render` executable is no longer shipped. Replace `./render` with
 `toolshed render`; use `toolshed pin` and `toolshed update` for their respective
-operations. The self-reference in `toolshed.toml` must always be a full commit
-SHA, never a moving tag. During development, the checked-in pin may still point
-at the previous release while `TOOLSHED_SOURCE=.` exercises the candidate.
-Do not publish those candidate artifacts as final releases: publish the
-candidate commit first, update the self-reference to that published commit,
-run `toolshed render` and the checks again from outside the checkout, then
-publish the final release containing the immutable repin.
+operations. `bash scripts/release.sh <version>` updates both `pyproject.toml`
+and the self-pin in `toolshed.toml` to `v<version>`, commits, tags, and pushes
+so the release tag, wheel filename, and self-pin stay aligned.
 
 ## Why `bin/` is committed
 

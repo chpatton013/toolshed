@@ -32,13 +32,21 @@ class ReleaseArtifacts(unittest.TestCase):
         self.assertIn("sha256sum --check --ignore-missing SHA256SUMS", installer)
         self.assertIn("shasum -a 256 --check --ignore-missing SHA256SUMS", installer)
 
-    def test_self_reference_uses_an_immutable_commit(self):
+    def test_self_reference_uses_the_release_tag(self):
         with (_ROOT / "toolshed.toml").open("rb") as source:
             manifest = tomllib.load(source)
 
         spec = manifest["requirements"]["toolshed"]["packages"][0]
-        self.assertRegex(spec, r"@\s*git\+https://github\.com/.+@[0-9a-f]{40}$")
-        self.assertNotRegex(spec, r"@v[0-9]")
+        self.assertRegex(
+            spec,
+            r"@\s*git\+https://github\.com/.+@(v[0-9]+\.[0-9]+\.[0-9]+|[0-9a-f]{40})$",
+        )
+
+    def test_release_script_updates_the_self_pin(self):
+        script = (_ROOT / "scripts/release.sh").read_text()
+
+        self.assertIn('tag="v$version"', script)
+        self.assertIn("toolshed @ git+https://github.com/chpatton013/toolshed@", script)
 
     def test_toolshed_wrapper_runs_outside_checkout_with_source_override(self):
         wrapper = _ROOT / "bin/toolshed"

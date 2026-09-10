@@ -48,6 +48,19 @@ third runs `toolshed update` end to end in a `tmp_path` copy of the repo and
 checks the lock digests it writes against a direct `toolshed pin` of the same
 version; run it after touching `toolshed/upstream.py`.
 
+## Releasing
+
+`bash scripts/release.sh <version>` updates `pyproject.toml` and the
+`toolshed.toml` self-pin, commits them, tags `v<version>`, and pushes both. The
+workflow then verifies the tree and publishes the GitHub release. The tag,
+wheel filename, and self-pin all come from the same argument; never hand-edit
+the version and tag separately. Watch with `gh run watch --workflow release.yml
+--exit-status`, then download the release and confirm the wheel is named
+`toolshed-<version>-py3-none-any.whl` and its checksums verify.
+
+Release tags are published and immutable. If a release went out wrong, clean up
+its release and tag before reusing that version, or publish the next version.
+
 ## Conventions
 
 - Shared agent context (instructions, house rules, prompts, skills) lives in
