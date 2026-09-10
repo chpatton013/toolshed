@@ -27,9 +27,7 @@ packages = ["black", "pyupgrade", "yamllint"]
 # resolve the pinned spec instead. A candidate keeps the previous release pin
 # until its commit is published; repin and render in the follow-up release.
 [requirements.toolshed]
-packages = [
-  "toolshed @ git+https://github.com/chpatton013/toolshed@373101d86b46883ed9aab833ef1aced35baafd94",
-]
+packages = ["toolshed @ git+https://github.com/chpatton013/toolshed@v0.2.0"]
 override_env = "TOOLSHED_SOURCE"
 
 # ---- tools, sorted by name -------------------------------------------------

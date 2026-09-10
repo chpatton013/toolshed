@@ -31,7 +31,7 @@ fi
 if [ -n "${TOOLSHED_SOURCE:-}" ]; then
   uv_args+=(--with "$TOOLSHED_SOURCE")
 else
-  uv_args+=(--with "toolshed @ git+https://github.com/chpatton013/toolshed@373101d86b46883ed9aab833ef1aced35baafd94")
+  uv_args+=(--with "toolshed @ git+https://github.com/chpatton013/toolshed@v0.2.0")
 fi
 
 exec "$uv" "${uv_args[@]}" python -m lint_trap.precommit "$@"
