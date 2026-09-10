@@ -4,13 +4,14 @@
 `toolshed render` command, and publish an immutable release with separate Linux
 x86_64 and arm64/aarch64 artifacts suitable for Fleet.
 
-**Status.** Approved; implementation not started.
+**Status.** Complete in v0.2.0.
 
 **Decisions.** Keep `pin` and `update` as top-level commands (`toolshed pin`,
 `toolshed update`); remove the legacy `render` executable/interface; publish
-separate Linux archives; pin the self-reference to a full commit SHA. The
-release workflow must handle the self-reference cycle explicitly rather than
-claiming a release can atomically contain its own final SHA.
+one universal `bin` archive because dotslash selects platform assets at runtime;
+and pin the self-reference to the same release tag created by the release
+script. The release script updates the package version and self-pin together
+before creating the matching tag.
 
 ## Tasks
 

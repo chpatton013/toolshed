@@ -35,11 +35,14 @@ class ReleaseArtifacts(unittest.TestCase):
     def test_self_reference_uses_the_release_tag(self):
         with (_ROOT / "toolshed.toml").open("rb") as source:
             manifest = tomllib.load(source)
+        with (_ROOT / "pyproject.toml").open("rb") as source:
+            project = tomllib.load(source)
 
         spec = manifest["requirements"]["toolshed"]["packages"][0]
-        self.assertRegex(
+        version = project["project"]["version"]
+        self.assertEqual(
+            f"toolshed @ git+https://github.com/chpatton013/toolshed@v{version}",
             spec,
-            r"@\s*git\+https://github\.com/.+@(v[0-9]+\.[0-9]+\.[0-9]+|[0-9a-f]{40})$",
         )
 
     def test_release_script_updates_the_self_pin(self):

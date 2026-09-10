@@ -24,8 +24,8 @@ packages = ["black", "pyupgrade", "yamllint"]
 
 # toolshed's own code. Overridable so a checkout can exercise its working tree:
 # `TOOLSHED_SOURCE=. ./bin/validate`. Released wrappers with the variable unset
-# resolve the pinned spec instead. A candidate keeps the previous release pin
-# until its commit is published; repin and render in the follow-up release.
+# resolve the pinned spec instead. The release script updates this pin to the
+# same tag it creates, keeping the package version and release tag aligned.
 [requirements.toolshed]
 packages = ["toolshed @ git+https://github.com/chpatton013/toolshed@v0.2.0"]
 override_env = "TOOLSHED_SOURCE"
