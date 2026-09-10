@@ -60,7 +60,7 @@ sed -i.bak "s/^version = \"$current\"/version = \"$version\"/" "$manifest"
 rm -f "$manifest.bak"
 
 manifest_toml="$repo_root/toolshed.toml"
-sed -i.bak -E "s#(toolshed @ git\\+https://github.com/chpatton013/toolshed@).*#\\1$tag#" "$manifest_toml"
+sed -i.bak -E "s#(toolshed @ git\\+https://github.com/chpatton013/toolshed@).*#\\1$tag\",#" "$manifest_toml"
 rm -f "$manifest_toml.bak"
 
 if ! grep -q "toolshed @ git+https://github.com/chpatton013/toolshed@$tag\"" "$manifest_toml"; then
